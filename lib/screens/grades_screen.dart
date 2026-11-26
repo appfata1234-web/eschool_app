@@ -214,7 +214,6 @@ class _QuarterSelector extends StatelessWidget {
                     const Duration(milliseconds: 160),
                   ),
                   curve: Curves.easeOutCubic,
-                  alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     border: Border(

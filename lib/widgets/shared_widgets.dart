@@ -163,7 +163,9 @@ class SectionHeading extends StatelessWidget {
         Expanded(child: heading),
         if (action != null) ...[
           const SizedBox(width: 8),
-          Flexible(child: action),
+          Flexible(
+            child: Align(alignment: Alignment.centerRight, child: action),
+          ),
         ],
       ],
     );
@@ -547,7 +549,8 @@ class InfoRow extends StatelessWidget {
                 child: Text(label, style: AppText.small(context.appMuted)),
               ),
               const SizedBox(width: 16),
-              Flexible(
+              Expanded(
+                flex: 2,
                 child: Text(
                   value,
                   textAlign: TextAlign.right,

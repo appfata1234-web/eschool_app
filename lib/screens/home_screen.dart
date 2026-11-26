@@ -403,7 +403,7 @@ class _TaskPreview extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Flexible(
+            Expanded(
               child: Text(
                 item.dueDateLabel,
                 textAlign: TextAlign.end,
