@@ -15,10 +15,14 @@ Flutter-приложение школьного дневника: расписа
 ## Стек
 
 - Flutter и Dart, Material 3.
-- Шрифты [Onest](https://github.com/googlefonts/onest) и [Unbounded](https://github.com/googlefonts/unbounded), лицензия OFL.
+- Шрифт [Onest](https://github.com/googlefonts/onest), лицензия OFL.
+- Палитра `#FDFFFC` / `#011627`, светлая и тёмная темы.
+- Плавающая навигация на телефоне и боковая панель на экранах от 840 dp.
 - Без сетевых запросов и внешних сервисов: данные в `lib/data/mock_school_data.dart`.
 
 ## Запуск
+
+Проверенная версия: Flutter 3.47.9 / Dart 3.13.7. Для Android нужны JDK 17 и Android SDK 36. Flutter 3.50.1 требует обновления AGP; текущая конфигурация Android остаётся без изменений.
 
 ```bash
 flutter pub get

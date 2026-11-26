@@ -149,6 +149,38 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
   });
 
+  testWidgets('search and selected day survive the rail breakpoint', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const EschoolApp());
+    await tester.pumpAndSettle();
+    await _openTab(tester, 'Расписание');
+    await tester.tap(find.text('Сб'));
+    await tester.pumpAndSettle();
+    await _openTab(tester, 'Задания');
+    await tester.enterText(find.byType(TextField), 'физика');
+    await tester.pumpAndSettle();
+    tester.view.physicalSize = const Size(1280, 800);
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'физика',
+    );
+    await _openTab(tester, 'Расписание');
+    expect(find.textContaining('Суббота'), findsWidgets);
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Суббота'), findsWidgets);
+    await _openTab(tester, 'Задания');
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'физика',
+    );
+  });
+
   for (final size in const [Size(360, 800), Size(390, 844), Size(1280, 800)]) {
     testWidgets('both themes and enlarged text at $size', (tester) async {
       tester.view.physicalSize = size;
@@ -196,13 +228,29 @@ void main() {
     });
   }
 
+  testWidgets('largest text keeps all sections usable', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pumpWidget(const EschoolApp());
+    await tester.pumpAndSettle();
+    for (final index in [0, 1, 2, 3, 4]) {
+      final dock = tester.widget<AppFloatingDock>(find.byType(AppFloatingDock));
+      dock.onSelected(index);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: '2x text tab $index');
+    }
+  });
+
   testWidgets('the app uses the exact selected canvas colors', (tester) async {
     await tester.pumpWidget(const EschoolApp());
     await tester.pumpAndSettle();
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.theme!.scaffoldBackgroundColor, const Color(0xFFFDFFFC));
     expect(app.darkTheme!.scaffoldBackgroundColor, const Color(0xFF011627));
-    expect(AppText.displayFamily, 'Onest');
+    expect(AppText.bodyFamily, 'Onest');
   });
 }
 

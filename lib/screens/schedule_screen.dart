@@ -524,7 +524,7 @@ class _LessonDetailSheet extends StatelessWidget {
         SheetHeader(
           title: subject.name,
           subtitle: '${day.weekdayFull}, ${day.dateLabel}',
-          leading: SubjectMark(color: context.appInk, icon: subject.icon),
+          leading: SubjectMark(icon: subject.icon),
         ),
         const SizedBox(height: 18),
         if (lesson.isCurrent) ...[

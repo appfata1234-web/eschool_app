@@ -68,11 +68,3 @@ flutter:
           weight: 600
         - asset: assets/fonts/Onest-Bold.ttf
           weight: 700
-    - family: Unbounded
-      fonts:
-        - asset: assets/fonts/Unbounded-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Unbounded-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Unbounded-Bold.ttf
-          weight: 700

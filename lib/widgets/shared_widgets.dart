@@ -31,7 +31,7 @@ class AppPage extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: appContentMaxWidth),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final horizontal = constraints.maxWidth >= 700
+                final horizontal = constraints.maxWidth >= AppSpacing.medium
                     ? 28.0
                     : AppSpacing.page;
                 return ListView(
@@ -39,7 +39,14 @@ class AppPage extends StatelessWidget {
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   padding:
                       padding ??
-                      EdgeInsets.fromLTRB(horizontal, 20, horizontal, 112),
+                      EdgeInsets.fromLTRB(
+                        horizontal,
+                        20,
+                        horizontal,
+                        MediaQuery.sizeOf(context).width >= AppSpacing.wide
+                            ? 28
+                            : 112 + MediaQuery.paddingOf(context).bottom,
+                      ),
                   children: children,
                 );
               },
@@ -94,53 +101,70 @@ class SectionHeading extends StatelessWidget {
     this.onAction,
     this.trailing,
   });
-
   final String title;
   final String? actionLabel;
   final VoidCallback? onAction;
   final Widget? trailing;
-
   @override
   Widget build(BuildContext context) {
-    final action = actionLabel;
+    final action =
+        trailing ??
+        (actionLabel == null || onAction == null
+            ? null
+            : InkWell(
+                onTap: onAction,
+                borderRadius: BorderRadius.circular(AppRadii.chip),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: AppSpacing.touch,
+                    minWidth: AppSpacing.touch,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            actionLabel!,
+                            style: AppText.small(
+                              context.appInk,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 15,
+                          color: context.appInk,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ));
+    final heading = Text(title, style: AppText.section(context.appInk));
+    if (MediaQuery.textScalerOf(context).scale(13) > 19.5) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          heading,
+          if (action != null)
+            Align(alignment: Alignment.centerRight, child: action),
+        ],
+      );
+    }
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(child: Text(title, style: AppText.section(context.appInk))),
-        if (trailing != null)
-          Padding(padding: const EdgeInsets.only(left: 12), child: trailing)
-        else if (action != null && onAction != null)
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: InkWell(
-              onTap: onAction,
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 14,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      action,
-                      style: AppText.small(
-                        context.appPrimary,
-                        weight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 15,
-                      color: context.appPrimary,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        Expanded(child: heading),
+        if (action != null) ...[
+          const SizedBox(width: 8),
+          Flexible(child: action),
+        ],
       ],
     );
   }
@@ -187,42 +211,48 @@ class GradeMark extends StatelessWidget {
     super.key,
     required this.value,
     this.size = 34,
-    this.muted = false,
+    this.onInk = false,
   });
-
   final int value;
   final double size;
-  final bool muted;
-
+  final bool onInk;
   @override
   Widget build(BuildContext context) {
-    final solid = value == 5 && !muted;
-    final base = value <= 2
-        ? context.appError
-        : muted
-        ? context.appMuted
-        : context.appInk;
+    final foreground = onInk ? context.appOnInk : context.appInk;
+    final inverse = onInk ? context.appInk : context.appOnInk;
+    final solid = value == 5;
+    final fontSize = (size * 0.44).clamp(12.0, double.infinity);
+    final extent = MediaQuery.textScalerOf(context).scale(fontSize) + 8;
+    final dimension = extent > size ? extent : size;
     return Semantics(
       label: 'Оценка $value',
       child: Container(
-        width: size,
-        height: size,
+        width: dimension,
+        height: dimension,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: solid ? context.appInk : context.appSurfaceAlt,
+          color: solid
+              ? foreground
+              : onInk
+              ? Colors.transparent
+              : context.appSurfaceAlt,
           borderRadius: BorderRadius.circular(AppRadii.chip),
-          border: value == 3
-              ? Border.all(color: context.appBorderStrong)
+          border: onInk || value == 3
+              ? Border.all(color: onInk ? foreground : context.appBorderStrong)
               : null,
         ),
         child: Text(
           '$value',
           style:
               AppText.small(
-                solid ? context.appOnInk : base,
+                solid
+                    ? inverse
+                    : value <= 2
+                    ? context.appError
+                    : foreground,
                 weight: FontWeight.w700,
               ).copyWith(
-                fontSize: size * 0.44,
+                fontSize: fontSize,
                 height: 1,
                 fontFeatures: AppText.tabular,
               ),
@@ -234,14 +264,8 @@ class GradeMark extends StatelessWidget {
 
 /// Subject identity block: a restrained tinted square with the subject icon.
 class SubjectMark extends StatelessWidget {
-  const SubjectMark({
-    super.key,
-    required this.color,
-    required this.icon,
-    this.size = 40,
-  });
+  const SubjectMark({super.key, required this.icon, this.size = 40});
 
-  final Color color;
   final IconData icon;
   final double size;
 
@@ -321,44 +345,38 @@ class InitialsAvatar extends StatelessWidget {
   const InitialsAvatar({
     super.key,
     required this.initials,
-    this.size = AppSpacing.touch,
+    this.size = 48,
     this.onTap,
   });
-
   final String initials;
   final double size;
   final VoidCallback? onTap;
-
   @override
   Widget build(BuildContext context) {
-    final avatar = Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: context.appSurfaceAlt,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        border: Border.all(color: context.appBorder),
-      ),
-      child: Text(
-        initials,
-        style: TextStyle(
-          fontFamily: AppText.displayFamily,
-          fontSize: size * 0.34,
-          fontWeight: FontWeight.w700,
-          color: context.appInk,
-        ),
-      ),
-    );
-
-    if (onTap == null) return avatar;
     return Semantics(
-      button: true,
-      label: 'Открыть профиль',
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: avatar,
+      label: onTap == null ? 'Аватар' : 'Открыть профиль',
+      button: onTap != null,
+      child: Material(
+        color: context.appSurfaceAlt,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          side: BorderSide(color: context.appBorder),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Center(
+              child: Text(
+                initials,
+                style: AppText.body(context.appInk, weight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -380,7 +398,7 @@ class ProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clamped = value.clamp(0.0, 1.0);
-    final fill = color ?? context.appPrimary;
+    final fill = color ?? context.appInk;
     return ClipRRect(
       borderRadius: BorderRadius.circular(height),
       child: SizedBox(

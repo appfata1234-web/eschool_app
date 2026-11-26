@@ -290,6 +290,7 @@ class _InboxHeader extends StatelessWidget {
     final completed = homeworks.where((item) => item.isCompleted).length;
     final ratio = total == 0 ? 0.0 : completed / total;
     final percent = (ratio * 100).round();
+    final percentWord = _plural(percent, 'процент', 'процента', 'процентов');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,7 +307,7 @@ class _InboxHeader extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Semantics(
-              label: '$percent процента выполнено',
+              label: '$percent $percentWord выполнено',
               child: Text(
                 '$percent%',
                 style: AppText.body(
@@ -319,6 +320,7 @@ class _InboxHeader extends StatelessWidget {
         ),
         const SizedBox(height: 7),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Flexible(
               child: Text(
@@ -339,7 +341,7 @@ class _InboxHeader extends StatelessWidget {
         ),
         const SizedBox(height: 7),
         Semantics(
-          label: 'Прогресс выполнения: $percent процентов',
+          label: 'Прогресс выполнения: $percent $percentWord',
           child: ProgressBar(value: ratio, height: 4, color: context.appInk),
         ),
       ],
@@ -436,6 +438,7 @@ class _SubjectFilter extends StatelessWidget {
       onSelected: (value) => onSelected(value == '__all__' ? null : value),
       position: PopupMenuPosition.under,
       color: context.appSurface,
+      borderRadius: BorderRadius.circular(AppRadii.input),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.card),
         side: BorderSide(color: context.appBorder),
@@ -451,18 +454,18 @@ class _SubjectFilter extends StatelessWidget {
             child: Text(subject.name, style: AppText.body(context.appInk)),
           ),
       ],
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minHeight: AppSpacing.touch,
-          maxWidth: 156,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: context.appSurface,
+          borderRadius: BorderRadius.circular(AppRadii.input),
+          border: Border.all(
+            color: hasSelection ? context.appInk : context.appBorder,
+          ),
         ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: context.appSurface,
-            borderRadius: BorderRadius.circular(AppRadii.input),
-            border: Border.all(
-              color: hasSelection ? context.appInk : context.appBorder,
-            ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AppSpacing.touch,
+            maxWidth: 156,
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
@@ -779,7 +782,7 @@ class _HomeworkDetailSheetState extends State<_HomeworkDetailSheet> {
         SheetHeader(
           title: subject.name,
           subtitle: 'Домашнее задание',
-          leading: SubjectMark(color: context.appInk, icon: subject.icon),
+          leading: SubjectMark(icon: subject.icon),
         ),
         const SizedBox(height: 16),
         status,

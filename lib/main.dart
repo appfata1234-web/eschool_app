@@ -25,6 +25,7 @@ class _EschoolAppState extends State<EschoolApp> {
   ThemeMode _themeMode = ThemeMode.light;
   late List<HomeworkItem> _homeworks;
   int _tabIndex = 0;
+  final _pagesKey = GlobalKey();
 
   @override
   void initState() {
@@ -60,6 +61,7 @@ class _EschoolAppState extends State<EschoolApp> {
       themeAnimationDuration: Duration.zero,
       themeAnimationCurve: Curves.easeOutCubic,
       home: _AppShell(
+        pagesKey: _pagesKey,
         tabIndex: _tabIndex,
         onTabSelected: _selectTab,
         homeworks: _homeworks,
@@ -77,6 +79,7 @@ class _EschoolAppState extends State<EschoolApp> {
 
 class _AppShell extends StatelessWidget {
   const _AppShell({
+    required this.pagesKey,
     required this.tabIndex,
     required this.onTabSelected,
     required this.homeworks,
@@ -85,6 +88,7 @@ class _AppShell extends StatelessWidget {
     required this.onDarkModeChanged,
   });
 
+  final GlobalKey pagesKey;
   final int tabIndex;
   final ValueChanged<int> onTabSelected;
   final List<HomeworkItem> homeworks;
@@ -99,6 +103,7 @@ class _AppShell extends StatelessWidget {
         .length;
 
     final pages = IndexedStack(
+      key: pagesKey,
       index: tabIndex,
       children: [
         HomeScreen(homeworks: homeworks, onNavigate: onTabSelected),
@@ -252,53 +257,90 @@ class _DockButton extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
-    final color = selected
-        ? (context.isDark ? AppColors.primary : AppColors.accent)
+    final active = context.isDark ? AppColors.accent : AppColors.inkSoft;
+    final background = selected ? active : context.dockBackground;
+    final color = selected && context.isDark
+        ? AppColors.primary
+        : selected
+        ? AppColors.accent
         : AppColors.darkTextSecondary;
-    final scale = MediaQuery.textScalerOf(context).scale(12) / 12;
+    final showLabel = MediaQuery.textScalerOf(context).scale(12) <= 18;
+    final inverseBadge = selected && context.isDark;
     return Semantics(
       selected: selected,
       button: true,
-      label: item.label,
-      child: InkWell(
-        onTap: onTap,
+      label: badge > 0 ? '${item.label}, $badge в работе' : item.label,
+      child: Material(
+        color: background,
         borderRadius: BorderRadius.circular(24),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: AppSpacing.touch),
-          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
-          decoration: BoxDecoration(
-            color: selected
-                ? (context.isDark ? AppColors.accent : const Color(0xFF132C42))
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Badge(
-                isLabelVisible: badge > 0,
-                label: Text('$badge'),
-                backgroundColor: AppColors.accent,
-                textColor: AppColors.primary,
-                child: Icon(
-                  selected ? item.selectedIcon : item.icon,
-                  color: color,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(height: 4),
-              if (scale <= 1.5)
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    item.label,
-                    style: AppText.small(
-                      color,
-                      weight: selected ? FontWeight.w700 : FontWeight.w500,
-                    ).copyWith(fontSize: 12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: AppSpacing.touch),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 2),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(
+                        selected ? item.selectedIcon : item.icon,
+                        color: color,
+                        size: 20,
+                      ),
+                      if (badge > 0)
+                        Positioned(
+                          top: -4,
+                          right: -16,
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: inverseBadge
+                                  ? AppColors.primary
+                                  : AppColors.accent,
+                              border: Border.all(color: background, width: 1.5),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$badge',
+                              textScaler: TextScaler.noScaling,
+                              style: AppText.small(
+                                inverseBadge
+                                    ? AppColors.accent
+                                    : AppColors.primary,
+                                weight: FontWeight.w700,
+                              ).copyWith(fontSize: 12, height: 1),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-            ],
+                  if (showLabel) ...[
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        item.label,
+                        style: AppText.small(
+                          color,
+                          weight: selected ? FontWeight.w700 : FontWeight.w500,
+                        ).copyWith(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ),

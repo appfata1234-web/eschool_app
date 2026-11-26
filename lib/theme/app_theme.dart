@@ -6,9 +6,6 @@ class AppColors {
   static const primary = Color(0xFF011627);
   static const primarySoft = Color(0xFFE9EFF2);
   static const accent = Color(0xFFFDFFFC);
-  static const accentSoft = Color(0xFFF4F7F5);
-  static const accentInk = primary;
-  static const coral = Color(0xFFB42318);
   static const lightBackground = accent;
   static const lightSurface = Color(0xFFF4F7F5);
   static const lightSurfaceAlt = primarySoft;
@@ -21,29 +18,12 @@ class AppColors {
   static const darkBorder = Color(0xFF1E3A52);
   static const darkTextPrimary = accent;
   static const darkTextSecondary = Color(0xFF98AAB8);
-  static const grade5 = primary;
-  static const grade4 = Color(0xFF4A5B69);
-  static const grade3 = Color(0xFF5C7080);
-  static const grade2 = coral;
-  static const success = primary;
-  static const warning = grade3;
-  static const danger = coral;
-  static const info = grade4;
-  static Color forGrade(int value) => switch (value) {
-    5 => grade5,
-    4 => grade4,
-    3 => grade3,
-    _ => grade2,
-  };
-  static Color forAverage(double value) => forGrade(
-    value >= 4.5
-        ? 5
-        : value >= 3.5
-        ? 4
-        : value >= 2.5
-        ? 3
-        : 2,
-  );
+  static const danger = Color(0xFFB42318);
+  static const panelInk = accent;
+  static const panelMuted = darkTextSecondary;
+  static const panelRule = Color(0xFF244057);
+  static const inkSoft = Color(0xFF132C42);
+  static const darkDock = Color(0xFF0D263C);
 }
 
 class AppRadii {
@@ -62,6 +42,7 @@ class AppSpacing {
   static const section = 20.0;
   static const gap = 12.0;
   static const touch = 48.0;
+  static const medium = 700.0;
   static const wide = 840.0;
   static const rail = 232.0;
   static const content = 960.0;
@@ -72,11 +53,10 @@ class AppText {
   AppText._();
 
   static const String bodyFamily = 'Onest';
-  static const String displayFamily = 'Onest';
   static const List<FontFeature> tabular = [FontFeature.tabularFigures()];
 
   static TextStyle pageTitle(Color color) => TextStyle(
-    fontFamily: displayFamily,
+    fontFamily: bodyFamily,
     fontSize: 24,
     height: 1.12,
     fontWeight: FontWeight.w700,
@@ -85,7 +65,7 @@ class AppText {
   );
 
   static TextStyle display(Color color, {double size = 32}) => TextStyle(
-    fontFamily: displayFamily,
+    fontFamily: bodyFamily,
     fontSize: size,
     height: 0.96,
     fontWeight: FontWeight.w700,
@@ -145,20 +125,13 @@ extension AppThemeContext on BuildContext {
   Color get appMuted =>
       isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
-  Color get appPrimary => appInk;
-  Color get appPrimarySoft => appSurfaceAlt;
-  Color get appAccent => appInk;
-  Color get appAccentSoft => appSurfaceAlt;
   Color get appHero => isDark ? AppColors.darkSurface : AppColors.primary;
-  Color get appGrade => appInk;
   Color get appOnInk => isDark ? AppColors.primary : AppColors.accent;
   Color get appError => isDark ? const Color(0xFFF97066) : AppColors.danger;
   Color get appBorderStrong =>
       isDark ? const Color(0xFF3A566E) : const Color(0xFF9FB0BC);
-  Color get appInkSoft =>
-      isDark ? AppColors.darkSurfaceAlt : const Color(0xFF132C42);
-  Color get dockBackground =>
-      isDark ? const Color(0xFF0D263C) : AppColors.primary;
+  Color get appInkSoft => isDark ? AppColors.darkSurfaceAlt : AppColors.inkSoft;
+  Color get dockBackground => isDark ? AppColors.darkDock : AppColors.primary;
 }
 
 /// Application light and dark themes.
@@ -192,7 +165,7 @@ class AppTheme {
       secondary: primary,
       onSecondary: isDark ? AppColors.primary : AppColors.accent,
       error: isDark ? const Color(0xFFF97066) : AppColors.danger,
-      onError: AppColors.accent,
+      onError: isDark ? AppColors.primary : AppColors.accent,
       surface: surface,
       onSurface: ink,
       surfaceContainerHighest: surfaceAlt,
@@ -267,15 +240,15 @@ class AppTheme {
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadii.input),
           borderSide: BorderSide(color: border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadii.input),
           borderSide: BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadii.input),
           borderSide: BorderSide(color: primary, width: 1.5),
         ),
       ),

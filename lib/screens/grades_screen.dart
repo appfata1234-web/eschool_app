@@ -74,46 +74,56 @@ class _GradesScreenState extends State<GradesScreen> {
     final subjects = _subjectsWithGrades;
     final delta = average - previousAverage;
 
+    final heading = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Оценки', style: AppText.pageTitle(context.appInk)),
+        const SizedBox(height: 6),
+        _QuarterSelector(
+          quarter: _quarter,
+          onChanged: (quarter) => setState(() => _quarter = quarter),
+        ),
+      ],
+    );
+    final metric = Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          _formatAverage(average),
+          style: AppText.display(context.appInk, size: 32),
+        ),
+        const SizedBox(height: 4),
+        if (entries.isNotEmpty)
+          Text(
+            '${delta >= 0 ? '+' : '−'}${delta.abs().toStringAsFixed(2).replaceAll('.', ',')} '
+            'к ${otherQuarter == 1 ? 'I' : 'II'} четв.',
+            style: AppText.small(
+              delta < 0 ? context.appError : context.appMuted,
+              weight: FontWeight.w600,
+            ).copyWith(fontFeatures: AppText.tabular),
+          ),
+      ],
+    );
     return AppPage(
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Оценки', style: AppText.pageTitle(context.appInk)),
-                  const SizedBox(height: 6),
-                  _QuarterSelector(
-                    quarter: _quarter,
-                    onChanged: (quarter) => setState(() => _quarter = quarter),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.gap),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _formatAverage(average),
-                  style: AppText.display(context.appInk, size: 32),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${delta >= 0 ? '+' : '−'}'
-                  '${delta.abs().toStringAsFixed(2).replaceAll('.', ',')} '
-                  'к ${otherQuarter == 1 ? 'I' : 'II'} четв.',
-                  style: AppText.small(
-                    delta < 0 ? context.appError : context.appMuted,
-                    weight: FontWeight.w600,
-                  ).copyWith(fontFeatures: AppText.tabular),
-                ),
-              ],
-            ),
-          ],
-        ),
+        if (MediaQuery.textScalerOf(context).scale(13) > 19.5)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              heading,
+              const SizedBox(height: 12),
+              Align(alignment: Alignment.centerRight, child: metric),
+            ],
+          )
+        else
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: heading),
+              const SizedBox(width: AppSpacing.gap),
+              metric,
+            ],
+          ),
         const SizedBox(height: AppSpacing.gap),
         _GradeDistributionBand(entries: entries),
         const SizedBox(height: AppSpacing.section),
@@ -475,7 +485,7 @@ class _SubjectGradesSheet extends StatelessWidget {
         SheetHeader(
           title: subject.name,
           subtitle: '${_quarterLabel(quarter)} · ${subject.teacher}',
-          leading: SubjectMark(color: context.appInk, icon: subject.icon),
+          leading: SubjectMark(icon: subject.icon),
         ),
         const SizedBox(height: 18),
         Row(

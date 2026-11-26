@@ -150,7 +150,7 @@ class _StudentIdPass extends StatelessWidget {
                     border: Border.all(
                       color: context.isDark
                           ? context.appBorderStrong
-                          : const Color(0xFF244057),
+                          : AppColors.panelRule,
                     ),
                   ),
                   child: Text(
@@ -300,8 +300,12 @@ class _SwitchRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                IgnorePointer(
-                  child: Switch(value: value, onChanged: onChanged),
+                ExcludeFocus(
+                  child: ExcludeSemantics(
+                    child: IgnorePointer(
+                      child: Switch(value: value, onChanged: onChanged),
+                    ),
+                  ),
                 ),
               ],
             ),

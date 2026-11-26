@@ -42,13 +42,16 @@ class HomeScreen extends StatelessWidget {
               lesson: current,
               onTap: () => onNavigate(1),
             );
-            final grades = _GradesSnapshot(onTap: () => onNavigate(2));
+            final grades = _GradesSnapshot(
+              onTap: () => onNavigate(2),
+              wide: constraints.maxWidth >= AppSpacing.medium,
+            );
             final day = _DayStrip(day: today, onTap: () => onNavigate(1));
             final tasks = _HomeworkPreview(
               items: pending,
               onTap: () => onNavigate(3),
             );
-            if (constraints.maxWidth >= 700) {
+            if (constraints.maxWidth >= AppSpacing.medium) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -95,8 +98,8 @@ class _LessonFocus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subject = MockSchoolData.subjectById(lesson.subjectId);
-    const ink = AppColors.accent;
-    const muted = AppColors.darkTextSecondary;
+    const ink = AppColors.panelInk;
+    const muted = AppColors.panelMuted;
     return Material(
       color: context.appHero,
       borderRadius: BorderRadius.circular(AppRadii.focus),
@@ -138,10 +141,7 @@ class _LessonFocus extends StatelessWidget {
                   const SizedBox(width: 8),
                   Padding(
                     padding: const EdgeInsets.only(top: 7),
-                    child: Text(
-                      'Каб. ${lesson.room}',
-                      style: AppText.small(ink),
-                    ),
+                    child: Text(lesson.room, style: AppText.small(ink)),
                   ),
                 ],
               ),
@@ -233,7 +233,7 @@ class _DayStrip extends StatelessWidget {
             padding: const EdgeInsets.only(top: 9),
             child: Text(
               'Далее: ${MockSchoolData.subjectById(next.subjectId).shortName}'
-              ' · Каб. ${next.room} · ${next.startTime}–${next.endTime}',
+              ' · ${next.room} · ${next.startTime}–${next.endTime}',
               style: AppText.small(context.appMuted),
             ),
           ),
@@ -273,13 +273,23 @@ class _DaySlot extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    lesson.grade != null
-                        ? '${lesson.grade!.value}'
-                        : lesson.isDone
-                        ? '✓'
-                        : '${lesson.order}',
-                    style: AppText.small(ink, weight: FontWeight.w700),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 22),
+                    child: lesson.grade != null
+                        ? GradeMark(
+                            value: lesson.grade!.value,
+                            size: 26,
+                            onInk: active,
+                          )
+                        : Center(
+                            child: Text(
+                              lesson.isDone ? '✓' : '№ ${lesson.order}',
+                              style: AppText.small(
+                                ink,
+                                weight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 5),
                   Text(
@@ -316,7 +326,9 @@ class _HomeworkPreview extends StatelessWidget {
       children: [
         SectionHeading(
           title: 'Задания к сдаче',
-          actionLabel: 'Все ${items.length} в работе',
+          actionLabel: items.length < 2
+              ? 'Все задания'
+              : 'Все ${items.length} в работе',
           onAction: onTap,
         ),
         if (items.isEmpty)
@@ -330,7 +342,7 @@ class _HomeworkPreview extends StatelessWidget {
         else
           LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth >= 700) {
+              if (constraints.maxWidth >= AppSpacing.medium) {
                 return IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -391,10 +403,13 @@ class _TaskPreview extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Text(
-              item.dueDateLabel,
-              style: AppText.small(
-                item.isUrgent ? context.appError : context.appMuted,
+            Flexible(
+              child: Text(
+                item.dueDateLabel,
+                textAlign: TextAlign.end,
+                style: AppText.small(
+                  item.isUrgent ? context.appError : context.appMuted,
+                ),
               ),
             ),
           ],
@@ -433,8 +448,9 @@ class _TaskPreview extends StatelessWidget {
 }
 
 class _GradesSnapshot extends StatelessWidget {
-  const _GradesSnapshot({required this.onTap});
+  const _GradesSnapshot({required this.onTap, this.wide = false});
   final VoidCallback onTap;
+  final bool wide;
   @override
   Widget build(BuildContext context) {
     final student = MockSchoolData.student;
@@ -442,6 +458,13 @@ class _GradesSnapshot extends StatelessWidget {
         .expand((day) => day.lessons)
         .where((lesson) => lesson.grade != null)
         .toList();
+    final recent =
+        MockSchoolData.grades.where((entry) => entry.quarter == 2).toList()
+          // Current-quarter demo entries all use November day labels.
+          ..sort(
+            (a, b) => (int.tryParse(b.dateLabel.split(' ').first) ?? 0)
+                .compareTo(int.tryParse(a.dateLabel.split(' ').first) ?? 0),
+          );
     final average = student.averageGpa.toStringAsFixed(2).replaceAll('.', ',');
     final trend = MockSchoolData.gpaTrend;
     final delta = trend.length > 1 ? trend.last - trend[trend.length - 2] : 0.0;
@@ -517,6 +540,39 @@ class _GradesSnapshot extends StatelessWidget {
               ),
             ],
           ),
+          if (wide) ...[
+            const SizedBox(height: 16),
+            Divider(color: context.appBorder),
+            for (final entry in recent.take(3))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            MockSchoolData.subjectById(entry.subjectId)
+                                .shortName,
+                            style: AppText.small(
+                              context.appInk,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            '${entry.workType} · ${entry.dateLabel}',
+                            style: AppText.small(context.appMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GradeMark(value: entry.value, size: 28),
+                  ],
+                ),
+              ),
+          ],
         ],
       ),
     );
