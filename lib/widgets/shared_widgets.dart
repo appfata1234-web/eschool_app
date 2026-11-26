@@ -1,10 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-const double appContentMaxWidth = 760;
+const double appContentMaxWidth = AppSpacing.content;
 
 /// Returns a motion duration that collapses when the OS asks for less motion.
 Duration appMotion(
@@ -18,11 +16,7 @@ Duration appMotion(
 
 /// Standard page body: safe area, readable max width and dismissal on scroll.
 class AppPage extends StatelessWidget {
-  const AppPage({
-    super.key,
-    required this.children,
-    this.padding,
-  });
+  const AppPage({super.key, required this.children, this.padding});
 
   final List<Widget> children;
   final EdgeInsetsGeometry? padding;
@@ -37,12 +31,22 @@ class AppPage extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: appContentMaxWidth),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final horizontal = constraints.maxWidth >= 700 ? 28.0 : 20.0;
+                final horizontal = constraints.maxWidth >= AppSpacing.medium
+                    ? 28.0
+                    : AppSpacing.page;
                 return ListView(
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: padding ??
-                      EdgeInsets.fromLTRB(horizontal, 20, horizontal, 36),
+                  padding:
+                      padding ??
+                      EdgeInsets.fromLTRB(
+                        horizontal,
+                        20,
+                        horizontal,
+                        MediaQuery.sizeOf(context).width >= AppSpacing.wide
+                            ? 28
+                            : 112 + MediaQuery.paddingOf(context).bottom,
+                      ),
                   children: children,
                 );
               },
@@ -78,18 +82,11 @@ class PageHeader extends StatelessWidget {
             children: [
               Text(title, style: AppText.pageTitle(context.appInk)),
               const SizedBox(height: 8),
-              Text(
-                meta,
-                style: AppText.small(context.appMuted),
-                maxLines: 2,
-              ),
+              Text(meta, style: AppText.small(context.appMuted), maxLines: 2),
             ],
           ),
         ),
-        if (trailing != null) ...[
-          const SizedBox(width: 14),
-          trailing!,
-        ],
+        if (trailing != null) ...[const SizedBox(width: 14), trailing!],
       ],
     );
   }
@@ -104,56 +101,72 @@ class SectionHeading extends StatelessWidget {
     this.onAction,
     this.trailing,
   });
-
   final String title;
   final String? actionLabel;
   final VoidCallback? onAction;
   final Widget? trailing;
-
   @override
   Widget build(BuildContext context) {
-    final action = actionLabel;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Text(title, style: AppText.section(context.appInk)),
-        ),
-        if (trailing != null)
-          Padding(
-            padding: const EdgeInsets.only(left: 12),
-            child: trailing,
-          )
-        else if (action != null && onAction != null)
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: InkWell(
-              onTap: onAction,
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      action,
-                      style: AppText.small(
-                        context.appPrimary,
-                        weight: FontWeight.w600,
-                      ),
+    final action =
+        trailing ??
+        (actionLabel == null || onAction == null
+            ? null
+            : InkWell(
+                onTap: onAction,
+                borderRadius: BorderRadius.circular(AppRadii.chip),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: AppSpacing.touch,
+                    minWidth: AppSpacing.touch,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 12,
                     ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 15,
-                      color: context.appPrimary,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            actionLabel!,
+                            style: AppText.small(
+                              context.appInk,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 15,
+                          color: context.appInk,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+              ));
+    final heading = Text(title, style: AppText.section(context.appInk));
+    if (MediaQuery.textScalerOf(context).scale(13) > 19.5) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          heading,
+          if (action != null)
+            Align(alignment: Alignment.centerRight, child: action),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: heading),
+        if (action != null) ...[
+          const SizedBox(width: 8),
+          Flexible(
+            child: Align(alignment: Alignment.centerRight, child: action),
           ),
+        ],
       ],
     );
   }
@@ -168,7 +181,7 @@ class AppCard extends StatelessWidget {
     this.onTap,
     this.color,
     this.borderColor,
-    this.radius = 22,
+    this.radius = AppRadii.card,
   });
 
   final Widget child;
@@ -189,9 +202,7 @@ class AppCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius),
         side: BorderSide(color: borderColor ?? context.appBorder),
       ),
-      child: onTap == null
-          ? content
-          : InkWell(onTap: onTap, child: content),
+      child: onTap == null ? content : InkWell(onTap: onTap, child: content),
     );
   }
 }
@@ -202,34 +213,51 @@ class GradeMark extends StatelessWidget {
     super.key,
     required this.value,
     this.size = 34,
-    this.muted = false,
+    this.onInk = false,
   });
-
   final int value;
   final double size;
-  final bool muted;
-
+  final bool onInk;
   @override
   Widget build(BuildContext context) {
-    final base = muted ? context.appMuted : AppColors.forGrade(value);
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: base.withValues(alpha: context.isDark ? 0.2 : 0.11),
-        borderRadius: BorderRadius.circular(size * 0.28),
-        border: Border.all(color: base.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        '$value',
-        style: AppText.small(
-          base,
-          weight: FontWeight.w700,
-        ).copyWith(
-          fontSize: size * 0.44,
-          height: 1,
-          fontFeatures: AppText.tabular,
+    final foreground = onInk ? context.appOnInk : context.appInk;
+    final inverse = onInk ? context.appInk : context.appOnInk;
+    final solid = value == 5;
+    final fontSize = (size * 0.44).clamp(12.0, double.infinity);
+    final extent = MediaQuery.textScalerOf(context).scale(fontSize) + 8;
+    final dimension = extent > size ? extent : size;
+    return Semantics(
+      label: 'Оценка $value',
+      child: Container(
+        width: dimension,
+        height: dimension,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: solid
+              ? foreground
+              : onInk
+              ? Colors.transparent
+              : context.appSurfaceAlt,
+          borderRadius: BorderRadius.circular(AppRadii.chip),
+          border: onInk || value == 3
+              ? Border.all(color: onInk ? foreground : context.appBorderStrong)
+              : null,
+        ),
+        child: Text(
+          '$value',
+          style:
+              AppText.small(
+                solid
+                    ? inverse
+                    : value <= 2
+                    ? context.appError
+                    : foreground,
+                weight: FontWeight.w700,
+              ).copyWith(
+                fontSize: fontSize,
+                height: 1,
+                fontFeatures: AppText.tabular,
+              ),
         ),
       ),
     );
@@ -238,22 +266,14 @@ class GradeMark extends StatelessWidget {
 
 /// Subject identity block: a restrained tinted square with the subject icon.
 class SubjectMark extends StatelessWidget {
-  const SubjectMark({
-    super.key,
-    required this.color,
-    required this.icon,
-    this.size = 40,
-  });
+  const SubjectMark({super.key, required this.icon, this.size = 40});
 
-  final Color color;
   final IconData icon;
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    final tint = context.isDark
-        ? Color.lerp(color, Colors.white, 0.35)!
-        : color;
+    final tint = context.appInk;
     return Container(
       width: size,
       height: size,
@@ -300,11 +320,7 @@ class MetaLine extends StatelessWidget {
 
 /// Semantic status text with a dot, not a background chip.
 class StatusLabel extends StatelessWidget {
-  const StatusLabel({
-    super.key,
-    required this.label,
-    required this.color,
-  });
+  const StatusLabel({super.key, required this.label, required this.color});
 
   final String label;
   final Color color;
@@ -320,57 +336,49 @@ class StatusLabel extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text(
-          label,
-          style: AppText.small(color, weight: FontWeight.w600),
-        ),
+        Text(label, style: AppText.small(color, weight: FontWeight.w600)),
       ],
     );
   }
 }
 
-/// Student initials disc backed by the highlighter accent.
+/// Neutral monogram button linking to the student profile.
 class InitialsAvatar extends StatelessWidget {
   const InitialsAvatar({
     super.key,
     required this.initials,
-    this.size = 44,
+    this.size = 48,
     this.onTap,
   });
-
   final String initials;
   final double size;
   final VoidCallback? onTap;
-
   @override
   Widget build(BuildContext context) {
-    final avatar = Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: AppColors.accent,
-        shape: BoxShape.circle,
-      ),
-      child: Text(
-        initials,
-        style: TextStyle(
-          fontFamily: AppText.displayFamily,
-          fontSize: size * 0.34,
-          fontWeight: FontWeight.w700,
-          color: AppColors.accentInk,
-        ),
-      ),
-    );
-
-    if (onTap == null) return avatar;
     return Semantics(
-      button: true,
-      label: 'Открыть профиль',
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: avatar,
+      label: onTap == null ? 'Аватар' : 'Открыть профиль',
+      button: onTap != null,
+      child: Material(
+        color: context.appSurfaceAlt,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          side: BorderSide(color: context.appBorder),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Center(
+              child: Text(
+                initials,
+                style: AppText.body(context.appInk, weight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -392,7 +400,7 @@ class ProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clamped = value.clamp(0.0, 1.0);
-    final fill = color ?? context.appPrimary;
+    final fill = color ?? context.appInk;
     return ClipRRect(
       borderRadius: BorderRadius.circular(height),
       child: SizedBox(
@@ -423,137 +431,6 @@ class ProgressBar extends StatelessWidget {
   }
 }
 
-/// Small trend chart with a soft fill and a single endpoint marker.
-class SparklineChart extends StatelessWidget {
-  const SparklineChart({
-    super.key,
-    required this.values,
-    this.height = 46,
-    this.color,
-    this.semanticLabel = 'Динамика среднего балла',
-  });
-
-  final List<double> values;
-  final double height;
-  final Color? color;
-  final String semanticLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    if (values.length < 2) return SizedBox(height: height);
-    final line = color ?? context.appPrimary;
-    return Semantics(
-      label: semanticLabel,
-      child: SizedBox(
-        height: height,
-        width: double.infinity,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return CustomPaint(
-              size: Size(constraints.maxWidth, height),
-              painter: _SparklinePainter(
-                values: values,
-                line: line,
-                dot: context.appAccent,
-                dotBorder: context.appSurface,
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _SparklinePainter extends CustomPainter {
-  _SparklinePainter({
-    required this.values,
-    required this.line,
-    required this.dot,
-    required this.dotBorder,
-  });
-
-  final List<double> values;
-  final Color line;
-  final Color dot;
-  final Color dotBorder;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final minValue = values.reduce(math.min);
-    final maxValue = values.reduce(math.max);
-    final span = math.max(maxValue - minValue, 0.001);
-    final stepX = size.width / (values.length - 1);
-    const verticalInset = 5.0;
-    final usableHeight = math.max(size.height - verticalInset * 2, 1.0);
-
-    Offset pointAt(int index) {
-      final normalized = (values[index] - minValue) / span;
-      return Offset(
-        stepX * index,
-        verticalInset + (1 - normalized) * usableHeight,
-      );
-    }
-
-    final path = Path();
-    final first = pointAt(0);
-    path.moveTo(first.dx, first.dy);
-    for (var i = 1; i < values.length; i++) {
-      final previous = pointAt(i - 1);
-      final current = pointAt(i);
-      final midX = (previous.dx + current.dx) / 2;
-      path.cubicTo(
-        midX,
-        previous.dy,
-        midX,
-        current.dy,
-        current.dx,
-        current.dy,
-      );
-    }
-
-    final fillPath = Path.from(path)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-
-    canvas.drawPath(
-      fillPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            line.withValues(alpha: 0.18),
-            line.withValues(alpha: 0.01),
-          ],
-        ).createShader(Offset.zero & size),
-    );
-
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = line
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.2
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
-
-    final last = pointAt(values.length - 1);
-    canvas.drawCircle(last, 4.6, Paint()..color = dotBorder);
-    canvas.drawCircle(last, 3.2, Paint()..color = dot);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SparklinePainter oldDelegate) {
-    return oldDelegate.values != values ||
-        oldDelegate.line != line ||
-        oldDelegate.dot != dot ||
-        oldDelegate.dotBorder != dotBorder;
-  }
-}
-
 /// Bottom sheet surface with a grab handle and bounded scroll area.
 class AppSheet extends StatelessWidget {
   const AppSheet({super.key, required this.children});
@@ -567,7 +444,9 @@ class AppSheet extends StatelessWidget {
       constraints: BoxConstraints(maxHeight: maxHeight),
       decoration: BoxDecoration(
         color: context.appSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadii.sheet),
+        ),
         border: Border(top: BorderSide(color: context.appBorder)),
       ),
       child: SafeArea(
@@ -670,14 +549,12 @@ class InfoRow extends StatelessWidget {
                 child: Text(label, style: AppText.small(context.appMuted)),
               ),
               const SizedBox(width: 16),
-              Flexible(
+              Expanded(
+                flex: 2,
                 child: Text(
                   value,
                   textAlign: TextAlign.right,
-                  style: AppText.body(
-                    context.appInk,
-                    weight: FontWeight.w600,
-                  ),
+                  style: AppText.body(context.appInk, weight: FontWeight.w600),
                 ),
               ),
             ],
@@ -727,10 +604,7 @@ class EmptyState extends StatelessWidget {
           ),
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(height: 8),
-            TextButton(
-              onPressed: onAction,
-              child: Text(actionLabel!),
-            ),
+            TextButton(onPressed: onAction, child: Text(actionLabel!)),
           ],
         ],
       ),

@@ -1,118 +1,99 @@
 import 'package:flutter/material.dart';
 
-/// Brand and semantic colors for the school diary.
-///
-/// The palette is built from school materials: cobalt ink, cool paper and a
-/// highlighter yellow. Subject colors stay secondary to these tokens.
+/// User-selected off-white and deep ink palette.
 class AppColors {
   AppColors._();
-
-  static const Color primary = Color(0xFF1F45E5);
-  static const Color primarySoft = Color(0xFFE7EBFF);
-  static const Color accent = Color(0xFFDDF247);
-  static const Color accentSoft = Color(0xFFF1F7C7);
-  static const Color accentInk = Color(0xFF141E00);
-  static const Color coral = Color(0xFFF05A3C);
-
-  static const Color lightBackground = Color(0xFFF1F4F8);
-  static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightSurfaceAlt = Color(0xFFE8EDF3);
-  static const Color lightBorder = Color(0xFFD2DAE5);
-  static const Color lightTextPrimary = Color(0xFF0B1524);
-  static const Color lightTextSecondary = Color(0xFF5A6878);
-
-  static const Color darkBackground = Color(0xFF080D18);
-  static const Color darkSurface = Color(0xFF111A2B);
-  static const Color darkSurfaceAlt = Color(0xFF1A2539);
-  static const Color darkBorder = Color(0xFF2A3850);
-  static const Color darkTextPrimary = Color(0xFFF3F6FC);
-  static const Color darkTextSecondary = Color(0xFF9FAFC5);
-
-  static const Color grade5 = Color(0xFF0B7A55);
-  static const Color grade4 = Color(0xFF1D5FD1);
-  static const Color grade3 = Color(0xFFA85A00);
-  static const Color grade2 = Color(0xFFB3261E);
-
-  static const Color success = grade5;
-  static const Color warning = grade3;
-  static const Color danger = Color(0xFFC43A20);
-  static const Color info = grade4;
-
-  static Color forGrade(int value) {
-    switch (value) {
-      case 5:
-        return grade5;
-      case 4:
-        return grade4;
-      case 3:
-        return grade3;
-      default:
-        return grade2;
-    }
-  }
-
-  static Color forAverage(double avg) {
-    if (avg >= 4.5) return grade5;
-    if (avg >= 3.5) return grade4;
-    if (avg >= 2.5) return grade3;
-    return grade2;
-  }
+  static const primary = Color(0xFF011627);
+  static const primarySoft = Color(0xFFE9EFF2);
+  static const accent = Color(0xFFFDFFFC);
+  static const lightBackground = accent;
+  static const lightSurface = Color(0xFFF4F7F5);
+  static const lightSurfaceAlt = primarySoft;
+  static const lightBorder = Color(0xFFD3DCE2);
+  static const lightTextPrimary = primary;
+  static const lightTextSecondary = Color(0xFF4A5B69);
+  static const darkBackground = primary;
+  static const darkSurface = Color(0xFF0A2236);
+  static const darkSurfaceAlt = Color(0xFF132E45);
+  static const darkBorder = Color(0xFF1E3A52);
+  static const darkTextPrimary = accent;
+  static const darkTextSecondary = Color(0xFF98AAB8);
+  static const danger = Color(0xFFB42318);
+  static const panelInk = accent;
+  static const panelMuted = darkTextSecondary;
+  static const panelRule = Color(0xFF244057);
+  static const inkSoft = Color(0xFF132C42);
+  static const darkDock = Color(0xFF0D263C);
 }
 
-/// Typography rules: Unbounded carries the page title and oversized numbers;
-/// Onest carries every body size. Three body steps are used: 13, 15 and 22.
+class AppRadii {
+  AppRadii._();
+  static const card = 14.0;
+  static const focus = 16.0;
+  static const chip = 6.0;
+  static const input = 10.0;
+  static const dock = 31.0;
+  static const sheet = 24.0;
+}
+
+class AppSpacing {
+  AppSpacing._();
+  static const page = 18.0;
+  static const section = 20.0;
+  static const gap = 12.0;
+  static const touch = 48.0;
+  static const medium = 700.0;
+  static const wide = 840.0;
+  static const rail = 232.0;
+  static const content = 960.0;
+}
+
+/// A single family with clear hierarchy and tabular numeric metrics.
 class AppText {
   AppText._();
 
   static const String bodyFamily = 'Onest';
-  static const String displayFamily = 'Unbounded';
   static const List<FontFeature> tabular = [FontFeature.tabularFigures()];
 
   static TextStyle pageTitle(Color color) => TextStyle(
-        fontFamily: displayFamily,
-        fontSize: 29,
-        height: 1.05,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -1.1,
-        color: color,
-      );
+    fontFamily: bodyFamily,
+    fontSize: 24,
+    height: 1.12,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.6,
+    color: color,
+  );
 
-  static TextStyle display(Color color, {double size = 66}) => TextStyle(
-        fontFamily: displayFamily,
-        fontSize: size,
-        height: 0.96,
-        fontWeight: FontWeight.w700,
-        letterSpacing: size * -0.045,
-        color: color,
-        fontFeatures: tabular,
-      );
+  static TextStyle display(Color color, {double size = 32}) => TextStyle(
+    fontFamily: bodyFamily,
+    fontSize: size,
+    height: 0.96,
+    fontWeight: FontWeight.w700,
+    letterSpacing: size * -0.045,
+    color: color,
+    fontFeatures: tabular,
+  );
 
   static TextStyle section(Color color) => TextStyle(
-        fontFamily: bodyFamily,
-        fontSize: 22,
-        height: 1.2,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.45,
-        color: color,
-      );
+    fontFamily: bodyFamily,
+    fontSize: 17,
+    height: 1.2,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.45,
+    color: color,
+  );
 
-  static TextStyle body(
-    Color color, {
-    FontWeight weight = FontWeight.w400,
-  }) =>
+  static TextStyle body(Color color, {FontWeight weight = FontWeight.w400}) =>
       TextStyle(
         fontFamily: bodyFamily,
         fontSize: 15,
-        height: 1.45,
+        height: 1.35,
         fontWeight: weight,
         letterSpacing: -0.1,
         color: color,
       );
 
-  static TextStyle small(
-    Color color, {
-    FontWeight weight = FontWeight.w500,
-  }) =>
+  static TextStyle small(Color color, {FontWeight weight = FontWeight.w500}) =>
       TextStyle(
         fontFamily: bodyFamily,
         fontSize: 13,
@@ -144,20 +125,13 @@ extension AppThemeContext on BuildContext {
   Color get appMuted =>
       isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
-  Color get appPrimary => isDark ? const Color(0xFF8CA2FF) : AppColors.primary;
-
-  Color get appPrimarySoft =>
-      isDark ? const Color(0xFF1B2B58) : AppColors.primarySoft;
-
-  Color get appAccent => AppColors.accent;
-
-  Color get appAccentSoft =>
-      isDark ? const Color(0xFF2A3510) : AppColors.accentSoft;
-
-  Color get appHero =>
-      isDark ? const Color(0xFF1835C4) : AppColors.primary;
-
-  Color get appGrade => isDark ? AppColors.grade4 : AppColors.primary;
+  Color get appHero => isDark ? AppColors.darkSurface : AppColors.primary;
+  Color get appOnInk => isDark ? AppColors.primary : AppColors.accent;
+  Color get appError => isDark ? const Color(0xFFF97066) : AppColors.danger;
+  Color get appBorderStrong =>
+      isDark ? const Color(0xFF3A566E) : const Color(0xFF9FB0BC);
+  Color get appInkSoft => isDark ? AppColors.darkSurfaceAlt : AppColors.inkSoft;
+  Color get dockBackground => isDark ? AppColors.darkDock : AppColors.primary;
 }
 
 /// Application light and dark themes.
@@ -170,26 +144,28 @@ class AppTheme {
 
   static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final background =
-        isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final background = isDark
+        ? AppColors.darkBackground
+        : AppColors.lightBackground;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final surfaceAlt =
-        isDark ? AppColors.darkSurfaceAlt : AppColors.lightSurfaceAlt;
+    final surfaceAlt = isDark
+        ? AppColors.darkSurfaceAlt
+        : AppColors.lightSurfaceAlt;
     final border = isDark ? AppColors.darkBorder : AppColors.lightBorder;
-    final ink =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final muted =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final primary = isDark ? const Color(0xFF8CA2FF) : AppColors.primary;
+    final ink = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final muted = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final primary = ink;
 
     final scheme = ColorScheme(
       brightness: brightness,
       primary: primary,
-      onPrimary: isDark ? const Color(0xFF071126) : Colors.white,
-      secondary: AppColors.accent,
-      onSecondary: AppColors.accentInk,
-      error: AppColors.danger,
-      onError: Colors.white,
+      onPrimary: isDark ? AppColors.primary : AppColors.accent,
+      secondary: primary,
+      onSecondary: isDark ? AppColors.primary : AppColors.accent,
+      error: isDark ? const Color(0xFFF97066) : AppColors.danger,
+      onError: isDark ? AppColors.primary : AppColors.accent,
       surface: surface,
       onSurface: ink,
       surfaceContainerHighest: surfaceAlt,
@@ -232,56 +208,54 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
       ),
-      dividerTheme: DividerThemeData(
-        color: border,
-        thickness: 1,
-        space: 1,
-      ),
+      dividerTheme: DividerThemeData(color: border, thickness: 1, space: 1),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: primary,
-          foregroundColor: isDark ? const Color(0xFF071126) : Colors.white,
+          foregroundColor: isDark ? AppColors.primary : AppColors.accent,
           minimumSize: const Size(48, 50),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: AppText.body(Colors.white, weight: FontWeight.w600),
+          textStyle: AppText.body(AppColors.accent, weight: FontWeight.w600),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primary,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          minimumSize: const Size(0, 40),
+          minimumSize: const Size(48, 48),
           textStyle: AppText.small(primary, weight: FontWeight.w600),
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: InputDecorationThemeData(
         filled: true,
         fillColor: surface,
         hintStyle: AppText.body(muted),
         prefixIconColor: muted,
         suffixIconColor: muted,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadii.input),
           borderSide: BorderSide(color: border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadii.input),
           borderSide: BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadii.input),
           borderSide: BorderSide(color: primary, width: 1.5),
         ),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return isDark ? const Color(0xFF071126) : Colors.white;
+            return isDark ? AppColors.primary : AppColors.accent;
           }
           return muted;
         }),
@@ -312,9 +286,7 @@ class AppTheme {
         backgroundColor: ink,
         contentTextStyle: AppText.body(surface),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: primary,
