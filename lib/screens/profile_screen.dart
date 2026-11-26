@@ -5,7 +5,7 @@ import '../models/school_models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
-/// Student profile with performance summary, personal details and settings.
+/// Student profile with deep-navy ID pass, open hairline details and settings.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
     super.key,
@@ -34,10 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Text(
               'Версия 1.0.0',
-              style: AppText.small(
-                context.appPrimary,
-                weight: FontWeight.w600,
-              ),
+              style: AppText.small(context.appInk, weight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
             Text(
@@ -63,81 +60,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return AppPage(
       children: [
-        const PageHeader(
-          title: 'Профиль',
-          meta: 'Личный кабинет ученика',
-        ),
-        const SizedBox(height: 20),
-        _IdentityPanel(student: student),
-        const SizedBox(height: 24),
-        const SectionHeading(title: 'Успеваемость'),
-        const SizedBox(height: 10),
-        _PerformanceCard(student: student),
-        const SizedBox(height: 24),
+        const PageHeader(title: 'Профиль', meta: 'Личный кабинет ученика'),
+        const SizedBox(height: 16),
+        _StudentIdPass(student: student),
+        const SizedBox(height: AppSpacing.section),
         const SectionHeading(title: 'Данные ученика'),
-        const SizedBox(height: 10),
-        AppCard(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-          child: Column(
-            children: [
-              InfoRow(
-                label: 'Школа',
-                value: student.schoolName,
-                showDivider: true,
-              ),
-              InfoRow(
-                label: 'Класс',
-                value: student.gradeClass,
-                showDivider: true,
-              ),
-              InfoRow(
-                label: 'Баланс питания',
-                value: '${student.cafeteriaBalanceRub} ₽',
-                showDivider: false,
-              ),
-            ],
-          ),
+        const SizedBox(height: 6),
+        Divider(height: 1, color: context.appBorder),
+        InfoRow(label: 'Школа', value: student.schoolName, showDivider: true),
+        InfoRow(label: 'Класс', value: student.gradeClass, showDivider: true),
+        InfoRow(
+          label: 'Баланс питания',
+          value: '${student.cafeteriaBalanceRub} ₽',
+          showDivider: true,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.section),
         const SectionHeading(title: 'Настройки'),
-        const SizedBox(height: 10),
-        AppCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              _SwitchRow(
-                icon: Icons.dark_mode_outlined,
-                title: 'Тёмная тема',
-                subtitle: 'Тёмное оформление интерфейса',
-                value: widget.isDarkMode,
-                onChanged: widget.onDarkModeChanged,
-              ),
-              Divider(
-                height: 1,
-                indent: 16,
-                endIndent: 16,
-                color: context.appBorder,
-              ),
-              _SwitchRow(
-                icon: Icons.notifications_none_rounded,
-                title: 'Уведомления',
-                subtitle: 'Напоминания о домашних заданиях',
-                value: _notificationsEnabled,
-                onChanged: (value) {
-                  setState(() => _notificationsEnabled = value);
-                },
-              ),
-              Divider(
-                height: 1,
-                indent: 16,
-                endIndent: 16,
-                color: context.appBorder,
-              ),
-              _AboutRow(onTap: _showAboutDialog),
-            ],
-          ),
+        const SizedBox(height: 6),
+        Divider(height: 1, color: context.appBorder),
+        _SwitchRow(
+          icon: Icons.dark_mode_outlined,
+          title: 'Тёмная тема',
+          subtitle: 'Тёмное оформление #011627',
+          value: widget.isDarkMode,
+          onChanged: widget.onDarkModeChanged,
         ),
-        const SizedBox(height: 22),
+        Divider(height: 1, color: context.appBorder),
+        _SwitchRow(
+          icon: Icons.notifications_none_rounded,
+          title: 'Уведомления',
+          subtitle: 'Напоминания о домашних заданиях',
+          value: _notificationsEnabled,
+          onChanged: (value) {
+            setState(() => _notificationsEnabled = value);
+          },
+        ),
+        Divider(height: 1, color: context.appBorder),
+        _AboutRow(onTap: _showAboutDialog),
+        Divider(height: 1, color: context.appBorder),
+        const SizedBox(height: AppSpacing.section),
         Center(
           child: Text(
             'Электронный дневник · 2026',
@@ -149,123 +110,145 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-class _IdentityPanel extends StatelessWidget {
-  const _IdentityPanel({required this.student});
+class _StudentIdPass extends StatelessWidget {
+  const _StudentIdPass({required this.student});
 
   final StudentProfile student;
 
   @override
   Widget build(BuildContext context) {
-    final panelColor =
-        context.isDark ? const Color(0xFF16223A) : const Color(0xFF0B1524);
-    final softWhite = Colors.white.withValues(alpha: 0.68);
+    final panelColor = context.isDark ? context.appSurface : AppColors.primary;
+    final ruleColor = context.isDark ? context.appBorder : context.appInkSoft;
+    const onNavyText = AppColors.accent;
+    const onNavyMuted = AppColors.darkTextSecondary;
+    final average = student.averageGpa.toStringAsFixed(2).replaceAll('.', ',');
 
-    return Container(
-      decoration: BoxDecoration(
-        color: panelColor,
-        borderRadius: BorderRadius.circular(26),
-        border: context.isDark
-            ? Border.all(color: Colors.white.withValues(alpha: 0.08))
-            : null,
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              InitialsAvatar(initials: student.initials, size: 58),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      student.fullName,
-                      style: TextStyle(
-                        fontFamily: AppText.displayFamily,
-                        fontSize: 24,
-                        height: 1.08,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.9,
-                        color: Colors.white,
-                      ),
+    return Semantics(
+      label: 'Карточка ученика и успеваемость',
+      child: Container(
+        decoration: BoxDecoration(
+          color: panelColor,
+          borderRadius: BorderRadius.circular(AppRadii.focus),
+          border: context.isDark
+              ? Border.all(color: context.appBorderStrong)
+              : null,
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: AppSpacing.touch,
+                  height: AppSpacing.touch,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: context.appInkSoft,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: context.isDark
+                          ? context.appBorderStrong
+                          : const Color(0xFF244057),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${student.gradeClass} · ${student.schoolName}',
-                      style: AppText.small(softWhite),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Container(
-            height: 1,
-            color: Colors.white.withValues(alpha: 0.16),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Container(
-                color: context.appAccent,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                child: Text(
-                  student.gradeClass,
-                  style: AppText.body(
-                    AppColors.accentInk,
-                    weight: FontWeight.w700,
+                  ),
+                  child: Text(
+                    student.initials,
+                    style: AppText.section(onNavyText),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Text('Класс', style: AppText.small(softWhite)),
-              const Spacer(),
-              Text(
-                'Ученик',
-                style: AppText.small(Colors.white.withValues(alpha: 0.46)),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        student.fullName,
+                        style: AppText.section(onNavyText).copyWith(
+                          fontSize: 19,
+                          height: 1.18,
+                          letterSpacing: -0.35,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${student.gradeClass} · ${student.schoolName}',
+                        style: AppText.small(onNavyMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(height: 1, color: ruleColor),
+            const SizedBox(height: 11),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _IdMetric(
+                    value: average,
+                    label: 'Средний балл',
+                    valueColor: onNavyText,
+                    labelColor: onNavyMuted,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _IdMetric(
+                    value: '${student.attendancePercent}%',
+                    label: 'Посещаемость',
+                    valueColor: onNavyText,
+                    labelColor: onNavyMuted,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _IdMetric(
+                    value: '${student.rankInClass}-е',
+                    label: 'Место в классе',
+                    valueColor: onNavyText,
+                    labelColor: onNavyMuted,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _PerformanceCard extends StatelessWidget {
-  const _PerformanceCard({required this.student});
+class _IdMetric extends StatelessWidget {
+  const _IdMetric({
+    required this.value,
+    required this.label,
+    required this.valueColor,
+    required this.labelColor,
+  });
 
-  final StudentProfile student;
+  final String value;
+  final String label;
+  final Color valueColor;
+  final Color labelColor;
 
   @override
   Widget build(BuildContext context) {
-    final average =
-        student.averageGpa.toStringAsFixed(2).replaceAll('.', ',');
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-      child: Column(
-        children: [
-          InfoRow(
-            label: 'Средний балл',
-            value: average,
-            showDivider: true,
-          ),
-          InfoRow(
-            label: 'Посещаемость',
-            value: '${student.attendancePercent}%',
-            showDivider: true,
-          ),
-          InfoRow(
-            label: 'Место в классе',
-            value: '${student.rankInClass}-е',
-            showDivider: false,
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: AppText.section(
+            valueColor,
+          ).copyWith(fontSize: 17, height: 1.15, fontFeatures: AppText.tabular),
+        ),
+        const SizedBox(height: 2),
+        Text(label, style: AppText.small(labelColor)),
+      ],
     );
   }
 }
@@ -287,38 +270,42 @@ class _SwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => onChanged(!value),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 13, 12, 13),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: context.appMuted),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppText.body(
-                      context.appInk,
-                      weight: FontWeight.w600,
-                    ),
+    return Semantics(
+      toggled: value,
+      label: '$title, $subtitle',
+      child: InkWell(
+        onTap: () => onChanged(!value),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 58),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: context.appMuted),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppText.body(
+                          context.appInk,
+                          weight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: AppText.small(context.appMuted)),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: AppText.small(context.appMuted)),
-                ],
-              ),
+                ),
+                const SizedBox(width: 10),
+                IgnorePointer(
+                  child: Switch(value: value, onChanged: onChanged),
+                ),
+              ],
             ),
-            const SizedBox(width: 10),
-            IgnorePointer(
-              child: Switch(
-                value: value,
-                onChanged: onChanged,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -332,43 +319,50 @@ class _AboutRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 15, 14, 15),
-        child: Row(
-          children: [
-            Icon(
-              Icons.info_outline_rounded,
-              size: 20,
-              color: context.appMuted,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'О приложении',
-                    style: AppText.body(
-                      context.appInk,
-                      weight: FontWeight.w600,
-                    ),
+    return Semantics(
+      button: true,
+      label: 'О приложении, Версия 1.0.0',
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 58),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 20,
+                  color: context.appMuted,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'О приложении',
+                        style: AppText.body(
+                          context.appInk,
+                          weight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Версия 1.0.0',
+                        style: AppText.small(context.appMuted),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Версия 1.0.0',
-                    style: AppText.small(context.appMuted),
-                  ),
-                ],
-              ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: context.appMuted,
+                ),
+              ],
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: context.appMuted,
-            ),
-          ],
+          ),
         ),
       ),
     );

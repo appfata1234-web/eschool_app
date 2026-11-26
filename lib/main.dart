@@ -8,7 +8,6 @@ import 'screens/homework_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/schedule_screen.dart';
 import 'theme/app_theme.dart';
-import 'widgets/shared_widgets.dart';
 
 void main() {
   runApp(const EschoolApp());
@@ -58,7 +57,7 @@ class _EschoolAppState extends State<EschoolApp> {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: _themeMode,
-      themeAnimationDuration: const Duration(milliseconds: 220),
+      themeAnimationDuration: Duration.zero,
       themeAnimationCurve: Curves.easeOutCubic,
       home: _AppShell(
         tabIndex: _tabIndex,
@@ -95,36 +94,63 @@ class _AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pendingHomeworks =
-        homeworks.where((homework) => !homework.isCompleted).length;
+    final pendingHomeworks = homeworks
+        .where((homework) => !homework.isCompleted)
+        .length;
 
+    final pages = IndexedStack(
+      index: tabIndex,
+      children: [
+        HomeScreen(homeworks: homeworks, onNavigate: onTabSelected),
+        ScheduleScreen(
+          homeworks: homeworks,
+          onOpenHomework: () => onTabSelected(3),
+        ),
+        const GradesScreen(),
+        HomeworkScreen(
+          homeworks: homeworks,
+          onToggleHomework: onToggleHomework,
+        ),
+        ProfileScreen(
+          isDarkMode: isDarkMode,
+          onDarkModeChanged: onDarkModeChanged,
+        ),
+      ],
+    );
     return Scaffold(
-      body: IndexedStack(
-        index: tabIndex,
-        children: [
-          HomeScreen(
-            homeworks: homeworks,
-            onNavigate: onTabSelected,
-          ),
-          ScheduleScreen(
-            homeworks: homeworks,
-            onOpenHomework: () => onTabSelected(3),
-          ),
-          const GradesScreen(),
-          HomeworkScreen(
-            homeworks: homeworks,
-            onToggleHomework: onToggleHomework,
-          ),
-          ProfileScreen(
-            isDarkMode: isDarkMode,
-            onDarkModeChanged: onDarkModeChanged,
-          ),
-        ],
-      ),
-      bottomNavigationBar: AppBottomNav(
-        selectedIndex: tabIndex,
-        onSelected: onTabSelected,
-        homeworkBadge: pendingHomeworks,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= AppSpacing.wide) {
+            return Row(
+              children: [
+                AppNavRail(
+                  selectedIndex: tabIndex,
+                  onSelected: onTabSelected,
+                  homeworkBadge: pendingHomeworks,
+                ),
+                Expanded(child: pages),
+              ],
+            );
+          }
+          return Stack(
+            children: [
+              Positioned.fill(child: pages),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
+                child: SafeArea(
+                  top: false,
+                  child: AppFloatingDock(
+                    selectedIndex: tabIndex,
+                    onSelected: onTabSelected,
+                    homeworkBadge: pendingHomeworks,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -142,25 +168,22 @@ class _NavItem {
   final IconData selectedIcon;
 }
 
-/// Five-tab student navigation with a highlighter indicator and no material
-/// navigation strip.
-class AppBottomNav extends StatelessWidget {
-  const AppBottomNav({
+/// Compact phone navigation shared with the wide workspace rail.
+class AppFloatingDock extends StatelessWidget {
+  const AppFloatingDock({
     super.key,
     required this.selectedIndex,
     required this.onSelected,
     this.homeworkBadge = 0,
   });
-
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final int homeworkBadge;
-
-  static const List<_NavItem> _items = [
+  static const items = [
     _NavItem(
       label: 'Главная',
-      icon: Icons.grid_view_outlined,
-      selectedIcon: Icons.grid_view_rounded,
+      icon: Icons.space_dashboard_outlined,
+      selectedIcon: Icons.space_dashboard_rounded,
     ),
     _NavItem(
       label: 'Расписание',
@@ -183,32 +206,99 @@ class AppBottomNav extends StatelessWidget {
       selectedIcon: Icons.person_rounded,
     ),
   ];
-
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: context.appSurface,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: context.appBorder)),
+      color: context.dockBackground,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.dock),
+        side: BorderSide(
+          color: context.isDark
+              ? context.appBorderStrong
+              : context.dockBackground,
         ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 64,
-            child: Row(
-              children: [
-                for (var index = 0; index < _items.length; index++)
-                  Expanded(
-                    child: _NavButton(
-                      item: _items[index],
-                      selected: selectedIndex == index,
-                      badge: index == 3 ? homeworkBadge : 0,
-                      onTap: () => onSelected(index),
-                    ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        child: Row(
+          children: [
+            for (var index = 0; index < items.length; index++)
+              Expanded(
+                child: _DockButton(
+                  item: items[index],
+                  selected: selectedIndex == index,
+                  badge: index == 3 ? homeworkBadge : 0,
+                  onTap: () => onSelected(index),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DockButton extends StatelessWidget {
+  const _DockButton({
+    required this.item,
+    required this.selected,
+    required this.badge,
+    required this.onTap,
+  });
+  final _NavItem item;
+  final bool selected;
+  final int badge;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final color = selected
+        ? (context.isDark ? AppColors.primary : AppColors.accent)
+        : AppColors.darkTextSecondary;
+    final scale = MediaQuery.textScalerOf(context).scale(12) / 12;
+    return Semantics(
+      selected: selected,
+      button: true,
+      label: item.label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: AppSpacing.touch),
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+          decoration: BoxDecoration(
+            color: selected
+                ? (context.isDark ? AppColors.accent : const Color(0xFF132C42))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Badge(
+                isLabelVisible: badge > 0,
+                label: Text('$badge'),
+                backgroundColor: AppColors.accent,
+                textColor: AppColors.primary,
+                child: Icon(
+                  selected ? item.selectedIcon : item.icon,
+                  color: color,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 4),
+              if (scale <= 1.5)
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    item.label,
+                    style: AppText.small(
+                      color,
+                      weight: selected ? FontWeight.w700 : FontWeight.w500,
+                    ).copyWith(fontSize: 12),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
       ),
@@ -216,96 +306,109 @@ class AppBottomNav extends StatelessWidget {
   }
 }
 
-class _NavButton extends StatelessWidget {
-  const _NavButton({
+class AppNavRail extends StatelessWidget {
+  const AppNavRail({
+    super.key,
+    required this.selectedIndex,
+    required this.onSelected,
+    this.homeworkBadge = 0,
+  });
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+  final int homeworkBadge;
+  @override
+  Widget build(BuildContext context) {
+    final student = MockSchoolData.student;
+    return Container(
+      width: AppSpacing.rail,
+      decoration: BoxDecoration(
+        color: context.appSurface,
+        border: Border(right: BorderSide(color: context.appBorder)),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 18),
+              Text('ЭЛЕКТРОННЫЙ', style: AppText.small(context.appMuted)),
+              Text('Дневник', style: AppText.pageTitle(context.appInk)),
+              const SizedBox(height: 36),
+              Expanded(
+                child: ListView(
+                  children: [
+                    for (var i = 0; i < AppFloatingDock.items.length; i++)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: _RailDestination(
+                          item: AppFloatingDock.items[i],
+                          selected: selectedIndex == i,
+                          badge: i == 3 ? homeworkBadge : 0,
+                          onTap: () => onSelected(i),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Divider(color: context.appBorder),
+              const SizedBox(height: 12),
+              Text(
+                student.fullName,
+                style: AppText.body(context.appInk, weight: FontWeight.w600),
+              ),
+              Text(student.gradeClass, style: AppText.small(context.appMuted)),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RailDestination extends StatelessWidget {
+  const _RailDestination({
     required this.item,
     required this.selected,
     required this.badge,
     required this.onTap,
   });
-
   final _NavItem item;
   final bool selected;
   final int badge;
   final VoidCallback onTap;
-
   @override
   Widget build(BuildContext context) {
-    final color = selected ? context.appPrimary : context.appMuted;
+    final color = selected ? context.appOnInk : context.appMuted;
     return Semantics(
       selected: selected,
       button: true,
-      label: item.label,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 7, bottom: 6),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedContainer(
-                duration:
-                    appMotion(context, const Duration(milliseconds: 160)),
-                curve: Curves.easeOutCubic,
-                width: selected ? 20 : 8,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: selected ? context.appAccent : Colors.transparent,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    selected ? item.selectedIcon : item.icon,
-                    size: 22,
-                    color: color,
-                  ),
-                  if (badge > 0)
-                    Positioned(
-                      top: -5,
-                      right: -9,
-                      child: Container(
-                        constraints: const BoxConstraints(minWidth: 16),
-                        height: 16,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: context.appAccent,
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text(
-                          '$badge',
-                          style: TextStyle(
-                            fontFamily: AppText.bodyFamily,
-                            fontSize: 10,
-                            height: 1,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.accentInk,
-                            fontFeatures: AppText.tabular,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 3),
-              Text(
-                item.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: AppText.bodyFamily,
-                  fontSize: 12,
-                  height: 1.1,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  letterSpacing: -0.1,
+      child: Material(
+        color: selected ? context.appInk : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadii.input),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadii.input),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+            child: Row(
+              children: [
+                Icon(
+                  selected ? item.selectedIcon : item.icon,
                   color: color,
+                  size: 20,
                 ),
-              ),
-            ],
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    item.label,
+                    style: AppText.small(color, weight: FontWeight.w600),
+                  ),
+                ),
+                if (badge > 0) Text('$badge', style: AppText.small(color)),
+              ],
+            ),
           ),
         ),
       ),

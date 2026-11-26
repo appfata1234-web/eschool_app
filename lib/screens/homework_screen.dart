@@ -5,7 +5,8 @@ import '../models/school_models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
-/// Full homework workspace with weekly progress, search, filters and details.
+/// Actionable deadline-grouped homework inbox with inline progress,
+/// search, subject/status filtering and detail sheets.
 class HomeworkScreen extends StatefulWidget {
   const HomeworkScreen({
     super.key,
@@ -40,27 +41,30 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
 
   List<HomeworkItem> get _filteredHomeworks {
     final query = _query.trim().toLowerCase();
-    return widget.homeworks.where((homework) {
-      if (_subjectFilterId != null && homework.subjectId != _subjectFilterId) {
-        return false;
-      }
+    return widget.homeworks
+        .where((homework) {
+          if (_subjectFilterId != null &&
+              homework.subjectId != _subjectFilterId) {
+            return false;
+          }
 
-      final matchesStatus = switch (_statusFilter) {
-        _StatusFilter.all => true,
-        _StatusFilter.active => !homework.isCompleted,
-        _StatusFilter.urgent => homework.isUrgent && !homework.isCompleted,
-        _StatusFilter.completed => homework.isCompleted,
-      };
-      if (!matchesStatus) return false;
-      if (query.isEmpty) return true;
+          final matchesStatus = switch (_statusFilter) {
+            _StatusFilter.all => true,
+            _StatusFilter.active => !homework.isCompleted,
+            _StatusFilter.urgent => homework.isUrgent && !homework.isCompleted,
+            _StatusFilter.completed => homework.isCompleted,
+          };
+          if (!matchesStatus) return false;
+          if (query.isEmpty) return true;
 
-      final subject = MockSchoolData.subjectById(homework.subjectId);
-      final haystack =
-          '${homework.title} ${homework.description} ${subject.name} '
-                  '${subject.shortName} ${subject.teacher}'
-              .toLowerCase();
-      return haystack.contains(query);
-    }).toList(growable: false);
+          final subject = MockSchoolData.subjectById(homework.subjectId);
+          final haystack =
+              '${homework.title} ${homework.description} ${subject.name} '
+                      '${subject.shortName} ${subject.teacher}'
+                  .toLowerCase();
+          return haystack.contains(query);
+        })
+        .toList(growable: false);
   }
 
   void _onSearchChanged(String value) {
@@ -98,65 +102,108 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
   @override
   Widget build(BuildContext context) {
     final homeworks = _filteredHomeworks;
+    final urgentItems = homeworks
+        .where((item) => !item.isCompleted && item.isUrgent)
+        .toList(growable: false);
+    final upcomingItems = homeworks
+        .where((item) => !item.isCompleted && !item.isUrgent)
+        .toList(growable: false);
+    final completedItems = homeworks
+        .where((item) => item.isCompleted)
+        .toList(growable: false);
 
     return AppPage(
       children: [
-        const PageHeader(
-          title: 'Домашние задания',
-          meta: 'Учебная неделя · 23–28 ноября',
-        ),
-        const SizedBox(height: 22),
-        _WeeklyProgress(homeworks: widget.homeworks),
-        const SizedBox(height: 20),
-        TextField(
-          controller: _searchController,
-          onChanged: _onSearchChanged,
-          onTapOutside: (_) => FocusScope.of(context).unfocus(),
-          textInputAction: TextInputAction.search,
-          style: AppText.body(context.appInk),
-          decoration: InputDecoration(
-            hintText: 'Предмет, тема или задание',
-            prefixIcon: const Icon(Icons.search_rounded, size: 20),
-            suffixIcon: _query.isEmpty
-                ? null
-                : IconButton(
-                    onPressed: _clearSearch,
-                    tooltip: 'Очистить поиск',
-                    icon: const Icon(Icons.close_rounded, size: 19),
-                  ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        _StatusTabs(
-          selected: _statusFilter,
-          onSelected: (filter) => setState(() => _statusFilter = filter),
-        ),
-        const SizedBox(height: 8),
+        _InboxHeader(homeworks: widget.homeworks),
+        const SizedBox(height: AppSpacing.gap),
         Row(
           children: [
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                onChanged: _onSearchChanged,
+                onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                textInputAction: TextInputAction.search,
+                style: AppText.body(context.appInk),
+                decoration: InputDecoration(
+                  hintText: 'Предмет или тема',
+                  hintStyle: AppText.small(context.appMuted),
+                  filled: true,
+                  fillColor: context.appSurface,
+                  isDense: true,
+                  constraints: const BoxConstraints(
+                    minHeight: AppSpacing.touch,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    size: 18,
+                    color: context.appMuted,
+                  ),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          onPressed: _clearSearch,
+                          tooltip: 'Очистить поиск',
+                          icon: Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: context.appMuted,
+                          ),
+                        ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.input),
+                    borderSide: BorderSide(color: context.appBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.input),
+                    borderSide: BorderSide(color: context.appBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.input),
+                    borderSide: BorderSide(color: context.appInk, width: 1.5),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
             _SubjectFilter(
               selectedId: _subjectFilterId,
               onSelected: (subjectId) {
                 setState(() => _subjectFilterId = subjectId);
               },
             ),
-            const Spacer(),
-            Text(
-              '${homeworks.length} '
-              '${_plural(homeworks.length, 'задание', 'задания', 'заданий')}',
-              style: AppText.small(context.appMuted),
-            ),
-            if (_hasActiveFilters)
-              Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: TextButton(
-                  onPressed: _resetFilters,
-                  child: const Text('Сбросить'),
-                ),
-              ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
+        _StatusTabs(
+          homeworks: widget.homeworks,
+          selected: _statusFilter,
+          onSelected: (filter) => setState(() => _statusFilter = filter),
+        ),
+        if (_hasActiveFilters) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${homeworks.length} '
+                  '${_plural(homeworks.length, 'задание', 'задания', 'заданий')}',
+                  style: AppText.small(context.appMuted)
+                      .copyWith(fontFeatures: AppText.tabular),
+                ),
+              ),
+              TextButton(
+                onPressed: _resetFilters,
+                child: const Text('Сбросить'),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 10),
         if (homeworks.isEmpty)
           EmptyState(
             icon: Icons.search_off_rounded,
@@ -167,30 +214,45 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
             actionLabel: _hasActiveFilters ? 'Сбросить фильтры' : null,
             onAction: _hasActiveFilters ? _resetFilters : null,
           )
-        else
-          AppCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                for (var index = 0; index < homeworks.length; index++) ...[
-                  if (index > 0)
-                    Divider(
-                      height: 1,
-                      indent: 16,
-                      endIndent: 16,
-                      color: context.appBorder,
-                    ),
-                  _HomeworkRow(
-                    key: ValueKey(homeworks[index].id),
-                    homework: homeworks[index],
-                    onTap: () => _openHomeworkDetails(homeworks[index]),
-                    onToggle: () => widget
-                        .onToggleHomework(homeworks[index].id),
-                  ),
-                ],
-              ],
+        else ...[
+          if (urgentItems.isNotEmpty) ...[
+            _HomeworkGroup(
+              title: 'Завтра, 27 ноя',
+              countLabel:
+                  '${urgentItems.length} '
+                  '${_plural(urgentItems.length, 'срочное', 'срочных', 'срочных')}',
+              urgent: true,
+              items: urgentItems,
+              onOpenDetails: _openHomeworkDetails,
+              onToggleHomework: widget.onToggleHomework,
             ),
-          ),
+            const SizedBox(height: 14),
+          ],
+          if (upcomingItems.isNotEmpty) ...[
+            _HomeworkGroup(
+              title: 'На выходных и далее',
+              countLabel:
+                  '${upcomingItems.length} '
+                  '${_plural(upcomingItems.length, 'задание', 'задания', 'заданий')}',
+              urgent: false,
+              items: upcomingItems,
+              onOpenDetails: _openHomeworkDetails,
+              onToggleHomework: widget.onToggleHomework,
+            ),
+            const SizedBox(height: 14),
+          ],
+          if (completedItems.isNotEmpty)
+            _HomeworkGroup(
+              title: 'Выполнено',
+              countLabel:
+                  '${completedItems.length} '
+                  '${_plural(completedItems.length, 'задание', 'задания', 'заданий')}',
+              urgent: false,
+              items: completedItems,
+              onOpenDetails: _openHomeworkDetails,
+              onToggleHomework: widget.onToggleHomework,
+            ),
+        ],
       ],
     );
   }
@@ -201,15 +263,24 @@ enum _StatusFilter { all, active, urgent, completed }
 
 extension on _StatusFilter {
   String get label => switch (this) {
-        _StatusFilter.all => 'Все',
-        _StatusFilter.active => 'Активные',
-        _StatusFilter.urgent => 'Срочные',
-        _StatusFilter.completed => 'Выполненные',
-      };
+    _StatusFilter.all => 'Все',
+    _StatusFilter.active => 'Активные',
+    _StatusFilter.urgent => 'Срочные',
+    _StatusFilter.completed => 'Готово',
+  };
+
+  int countFor(List<HomeworkItem> homeworks) => switch (this) {
+    _StatusFilter.all => homeworks.length,
+    _StatusFilter.active => homeworks.where((item) => !item.isCompleted).length,
+    _StatusFilter.urgent =>
+      homeworks.where((item) => item.isUrgent && !item.isCompleted).length,
+    _StatusFilter.completed =>
+      homeworks.where((item) => item.isCompleted).length,
+  };
 }
 
-class _WeeklyProgress extends StatelessWidget {
-  const _WeeklyProgress({required this.homeworks});
+class _InboxHeader extends StatelessWidget {
+  const _InboxHeader({required this.homeworks});
 
   final List<HomeworkItem> homeworks;
 
@@ -219,41 +290,57 @@ class _WeeklyProgress extends StatelessWidget {
     final completed = homeworks.where((item) => item.isCompleted).length;
     final ratio = total == 0 ? 0.0 : completed / total;
     final percent = (ratio * 100).round();
-    final complete = total > 0 && completed == total;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Прогресс недели',
-                    style: AppText.section(context.appInk),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Выполнено $completed из $total заданий',
-                    style: AppText.small(context.appMuted),
-                  ),
-                ],
+              child: Text(
+                'Домашние задания',
+                style: AppText.pageTitle(context.appInk),
               ),
             ),
-            const SizedBox(width: 12),
-            Text(
-              '$percent%',
-              style: AppText.display(context.appInk, size: 36),
+            const SizedBox(width: 10),
+            Semantics(
+              label: '$percent процента выполнено',
+              child: Text(
+                '$percent%',
+                style: AppText.body(
+                  context.appInk,
+                  weight: FontWeight.w700,
+                ).copyWith(fontFeatures: AppText.tabular),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        ProgressBar(
-          value: ratio,
-          color: complete ? AppColors.success : context.appPrimary,
+        const SizedBox(height: 7),
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                'Прогресс недели',
+                style: AppText.small(context.appMuted),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Выполнено $completed из $total заданий',
+                textAlign: TextAlign.end,
+                style: AppText.small(context.appMuted)
+                    .copyWith(fontFeatures: AppText.tabular),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 7),
+        Semantics(
+          label: 'Прогресс выполнения: $percent процентов',
+          child: ProgressBar(value: ratio, height: 4, color: context.appInk),
         ),
       ],
     );
@@ -261,76 +348,87 @@ class _WeeklyProgress extends StatelessWidget {
 }
 
 class _StatusTabs extends StatelessWidget {
-  const _StatusTabs({required this.selected, required this.onSelected});
+  const _StatusTabs({
+    required this.homeworks,
+    required this.selected,
+    required this.onSelected,
+  });
 
+  final List<HomeworkItem> homeworks;
   final _StatusFilter selected;
   final ValueChanged<_StatusFilter> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (final filter in _StatusFilter.values)
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: InkWell(
-                onTap: () => onSelected(filter),
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        filter.label,
-                        style: AppText.small(
-                          selected == filter
-                              ? context.appInk
-                              : context.appMuted,
-                          weight: selected == filter
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                        ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: context.appBorder)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final filter in _StatusFilter.values)
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Semantics(
+                  selected: selected == filter,
+                  button: true,
+                  child: InkWell(
+                    onTap: () => onSelected(filter),
+                    borderRadius: BorderRadius.circular(AppRadii.chip),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: AppSpacing.touch,
                       ),
-                      const SizedBox(height: 6),
-                      AnimatedContainer(
-                        duration:
-                            appMotion(context, const Duration(milliseconds: 160)),
-                        curve: Curves.easeOutCubic,
-                        width: selected == filter ? 20 : 0,
-                        height: 2,
+                      child: Container(
+                        alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: context.appPrimary,
-                          borderRadius: BorderRadius.circular(2),
+                          border: Border(
+                            bottom: BorderSide(
+                              color: selected == filter
+                                  ? context.appInk
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Text(
+                          '${filter.label} · ${filter.countFor(homeworks)}',
+                          style: AppText.small(
+                            selected == filter
+                                ? context.appInk
+                                : context.appMuted,
+                            weight: selected == filter
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ).copyWith(fontFeatures: AppText.tabular),
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class _SubjectFilter extends StatelessWidget {
-  const _SubjectFilter({
-    required this.selectedId,
-    required this.onSelected,
-  });
+  const _SubjectFilter({required this.selectedId, required this.onSelected});
 
   final String? selectedId;
   final ValueChanged<String?> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    final label = selectedId == null
-        ? 'Все предметы'
-        : MockSchoolData.subjectById(selectedId!).shortName;
+    final hasSelection = selectedId != null;
+    final label = hasSelection
+        ? MockSchoolData.subjectById(selectedId!).shortName
+        : 'Предметы';
 
     return PopupMenuButton<String>(
       initialValue: selectedId ?? '__all__',
@@ -339,46 +437,123 @@ class _SubjectFilter extends StatelessWidget {
       position: PopupMenuPosition.under,
       color: context.appSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         side: BorderSide(color: context.appBorder),
       ),
       itemBuilder: (context) => [
-        const PopupMenuItem<String>(
+        PopupMenuItem<String>(
           value: '__all__',
-          child: Text('Все предметы'),
+          child: Text('Все предметы', style: AppText.body(context.appInk)),
         ),
         for (final subject in MockSchoolData.subjects.values)
           PopupMenuItem<String>(
             value: subject.id,
-            child: Text(subject.name),
+            child: Text(subject.name, style: AppText.body(context.appInk)),
           ),
       ],
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.tune_rounded,
-              size: 15,
-              color: context.appMuted,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: AppSpacing.touch,
+          maxWidth: 156,
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: context.appSurface,
+            borderRadius: BorderRadius.circular(AppRadii.input),
+            border: Border.all(
+              color: hasSelection ? context.appInk : context.appBorder,
             ),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: AppText.small(
-                context.appInk,
-                weight: FontWeight.w600,
-              ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.small(
+                      context.appInk,
+                      weight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 16,
+                  color: context.appMuted,
+                ),
+              ],
             ),
-            Icon(
-              Icons.arrow_drop_down_rounded,
-              size: 18,
-              color: context.appMuted,
-            ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _HomeworkGroup extends StatelessWidget {
+  const _HomeworkGroup({
+    required this.title,
+    required this.countLabel,
+    required this.urgent,
+    required this.items,
+    required this.onOpenDetails,
+    required this.onToggleHomework,
+  });
+
+  final String title;
+  final String countLabel;
+  final bool urgent;
+  final List<HomeworkItem> items;
+  final ValueChanged<HomeworkItem> onOpenDetails;
+  final ValueChanged<String> onToggleHomework;
+
+  @override
+  Widget build(BuildContext context) {
+    final headerColor = urgent ? context.appError : context.appMuted;
+    final headerBorder = urgent ? context.appError : context.appBorder;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.only(top: 4, bottom: 5),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: headerBorder)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppText.small(headerColor, weight: FontWeight.w700),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                countLabel,
+                style: AppText.small(
+                  headerColor,
+                  weight: FontWeight.w700,
+                ).copyWith(fontFeatures: AppText.tabular),
+              ),
+            ],
+          ),
+        ),
+        for (var index = 0; index < items.length; index++) ...[
+          if (index > 0) Divider(height: 1, color: context.appBorder),
+          _HomeworkRow(
+            key: ValueKey(items[index].id),
+            homework: items[index],
+            onTap: () => onOpenDetails(items[index]),
+            onToggle: () => onToggleHomework(items[index].id),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -398,95 +573,104 @@ class _HomeworkRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subject = MockSchoolData.subjectById(homework.subjectId);
-    final accent = context.isDark
-        ? Color.lerp(subject.color, Colors.white, 0.35)!
-        : subject.color;
     final completed = homework.isCompleted;
-    final status = completed
-        ? StatusLabel(label: 'Готово', color: AppColors.success)
-        : homework.isUrgent
-            ? const StatusLabel(label: 'Срочно', color: AppColors.danger)
-            : null;
+    final urgent = !completed && homework.isUrgent;
 
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 15, 12, 15),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 1),
-              child: _CompletionControl(
-                completed: completed,
-                onTap: onToggle,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Container(
-              width: 3,
-              height: 48,
-              margin: const EdgeInsets.only(top: 2),
-              decoration: BoxDecoration(
-                color: completed ? context.appBorder : accent,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      ?status,
-                      const Spacer(),
-                      Text(
-                        subject.shortName,
-                        style: AppText.small(context.appMuted),
+    final metaDetails = urgent
+        ? '${subject.shortName} · ${homework.estimatedMinutes} мин'
+        : completed
+        ? '${subject.shortName} · ${homework.estimatedMinutes} мин'
+        : '${subject.shortName} · ${homework.dueDateLabel} · '
+              '${homework.estimatedMinutes} мин';
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 58),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _CompletionControl(
+            completed: completed,
+            urgent: urgent,
+            subjectName: subject.name,
+            onTap: onToggle,
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(AppRadii.input),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            homework.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                AppText.body(
+                                  completed ? context.appMuted : context.appInk,
+                                  weight: completed
+                                      ? FontWeight.w500
+                                      : FontWeight.w600,
+                                ).copyWith(
+                                  height: 1.25,
+                                  decoration: completed
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
+                          ),
+                          const SizedBox(height: 2),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 2,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              if (urgent)
+                                Text(
+                                  'Срочно',
+                                  style: AppText.small(
+                                    context.appError,
+                                    weight: FontWeight.w600,
+                                  ),
+                                )
+                              else if (completed)
+                                Text(
+                                  'Готово',
+                                  style: AppText.small(
+                                    context.appInk,
+                                    weight: FontWeight.w600,
+                                  ),
+                                ),
+                              Text(
+                                metaDetails,
+                                style: AppText.small(context.appMuted)
+                                    .copyWith(fontFeatures: AppText.tabular),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    homework.title,
-                    style: AppText.body(
-                      completed ? context.appMuted : context.appInk,
-                      weight: FontWeight.w600,
-                    ).copyWith(
-                      decoration:
-                          completed ? TextDecoration.lineThrough : null,
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 13,
-                    runSpacing: 4,
-                    children: [
-                      MetaLine(
-                        icon: Icons.event_outlined,
-                        text: homework.dueDateLabel,
-                      ),
-                      MetaLine(
-                        icon: Icons.schedule_rounded,
-                        text: '${homework.estimatedMinutes} мин',
+                    if (!completed) ...[
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: context.appMuted,
                       ),
                     ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            const SizedBox(width: 2),
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: context.appMuted,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -495,34 +679,58 @@ class _HomeworkRow extends StatelessWidget {
 class _CompletionControl extends StatelessWidget {
   const _CompletionControl({
     required this.completed,
+    required this.urgent,
+    required this.subjectName,
     required this.onTap,
   });
 
   final bool completed;
+  final bool urgent;
+  final String subjectName;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: completed ? 'Вернуть в работу' : 'Отметить выполненным',
-      child: InkResponse(
-        onTap: onTap,
-        radius: 24,
-        child: AnimatedContainer(
-          duration: appMotion(context, const Duration(milliseconds: 160)),
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: completed ? AppColors.success : Colors.transparent,
-            border: Border.all(
-              color: completed ? AppColors.success : context.appBorder,
-              width: 1.5,
+    final borderColor = completed
+        ? context.appInk
+        : urgent
+        ? context.appError
+        : context.appBorderStrong;
+
+    return Semantics(
+      button: true,
+      toggled: completed,
+      label: completed
+          ? 'Вернуть в работу: $subjectName'
+          : 'Отметить выполненным: $subjectName',
+      child: Tooltip(
+        message: completed ? 'Вернуть в работу' : 'Отметить выполненным',
+        child: InkResponse(
+          onTap: onTap,
+          radius: 24,
+          child: SizedBox(
+            width: AppSpacing.touch,
+            height: AppSpacing.touch,
+            child: Center(
+              child: AnimatedContainer(
+                duration: appMotion(context, const Duration(milliseconds: 160)),
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: completed ? context.appInk : context.appBackground,
+                  borderRadius: BorderRadius.circular(AppRadii.chip),
+                  border: Border.all(color: borderColor, width: 1.8),
+                ),
+                child: completed
+                    ? Icon(
+                        Icons.check_rounded,
+                        size: 14,
+                        color: context.appOnInk,
+                      )
+                    : null,
+              ),
             ),
           ),
-          child: completed
-              ? const Icon(Icons.check_rounded, size: 18, color: Colors.white)
-              : null,
         ),
       ),
     );
@@ -561,37 +769,28 @@ class _HomeworkDetailSheetState extends State<_HomeworkDetailSheet> {
     final homework = widget.homework;
     final subject = MockSchoolData.subjectById(homework.subjectId);
     final status = _completed
-        ? const StatusLabel(label: 'Выполнено', color: AppColors.success)
+        ? StatusLabel(label: 'Выполнено', color: context.appInk)
         : homework.isUrgent
-            ? const StatusLabel(label: 'Срочно', color: AppColors.danger)
-            : StatusLabel(label: 'В работе', color: context.appPrimary);
+        ? StatusLabel(label: 'Срочно', color: context.appError)
+        : StatusLabel(label: 'В работе', color: context.appMuted);
 
     return AppSheet(
       children: [
         SheetHeader(
           title: subject.name,
           subtitle: 'Домашнее задание',
-          leading: SubjectMark(
-            color: subject.color,
-            icon: subject.icon,
-          ),
+          leading: SubjectMark(color: context.appInk, icon: subject.icon),
         ),
         const SizedBox(height: 16),
         status,
         const SizedBox(height: 10),
-        Text(
-          homework.title,
-          style: AppText.section(context.appInk),
-        ),
+        Text(homework.title, style: AppText.section(context.appInk)),
         const SizedBox(height: 10),
         Wrap(
           spacing: 14,
           runSpacing: 5,
           children: [
-            MetaLine(
-              icon: Icons.event_outlined,
-              text: homework.dueDateLabel,
-            ),
+            MetaLine(icon: Icons.event_outlined, text: homework.dueDateLabel),
             MetaLine(
               icon: Icons.schedule_rounded,
               text: '${homework.estimatedMinutes} мин',
@@ -615,7 +814,7 @@ class _HomeworkDetailSheetState extends State<_HomeworkDetailSheet> {
                     child: Text(
                       '${index + 1}'.padLeft(2, '0'),
                       style: AppText.small(
-                        context.appPrimary,
+                        context.appInk,
                         weight: FontWeight.w700,
                       ).copyWith(fontFeatures: AppText.tabular),
                     ),

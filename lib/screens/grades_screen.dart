@@ -5,7 +5,8 @@ import '../models/school_models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
-/// Quarter grades overview with weighted averages and subject breakdowns.
+/// Quarter grades ledger with masthead average, monochrome distribution, and
+/// open hairline subject rows.
 class GradesScreen extends StatefulWidget {
   const GradesScreen({super.key});
 
@@ -21,8 +22,10 @@ class _GradesScreenState extends State<GradesScreen> {
       .toList(growable: false);
 
   List<SubjectMeta> get _subjectsWithGrades => MockSchoolData.subjects.values
-      .where((subject) => _quarterGrades
-          .any((grade) => grade.subjectId == subject.id))
+      .where(
+        (subject) =>
+            _quarterGrades.any((grade) => grade.subjectId == subject.id),
+      )
       .toList(growable: false);
 
   double _averageFor(List<GradeEntry> entries) {
@@ -31,8 +34,7 @@ class _GradesScreenState extends State<GradesScreen> {
       0,
       (sum, grade) => sum + grade.value * grade.weight,
     );
-    final weights =
-        entries.fold<double>(0, (sum, grade) => sum + grade.weight);
+    final weights = entries.fold<double>(0, (sum, grade) => sum + grade.weight);
     return weighted / weights;
   }
 
@@ -67,110 +69,67 @@ class _GradesScreenState extends State<GradesScreen> {
   Widget build(BuildContext context) {
     final entries = _quarterGrades;
     final average = _averageFor(entries);
-    final previousAverage = _averageForQuarter(_quarter == 1 ? 2 : 1);
+    final otherQuarter = _quarter == 1 ? 2 : 1;
+    final previousAverage = _averageForQuarter(otherQuarter);
     final subjects = _subjectsWithGrades;
     final delta = average - previousAverage;
 
     return AppPage(
       children: [
-        PageHeader(
-          title: 'Оценки',
-          meta: '${_quarterLabel(_quarter)} · '
-              '${entries.length} ${_countWord(entries.length, 'оценка', 'оценки', 'оценок')}',
-        ),
-        const SizedBox(height: 20),
-        _QuarterSelector(
-          quarter: _quarter,
-          onChanged: (quarter) => setState(() => _quarter = quarter),
-        ),
-        const SizedBox(height: 20),
-        SectionHeading(
-          title: 'Итоги четверти',
-          trailing: Text(
-            '${subjects.length} предметов',
-            style: AppText.small(context.appMuted),
-          ),
-        ),
-        const SizedBox(height: 10),
-        AppCard(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Средний балл',
-                          style: AppText.small(context.appMuted),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _formatAverage(average),
-                          style: AppText.display(context.appInk, size: 54),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        _quarterLabel(_quarter == 1 ? 2 : 1),
-                        style: AppText.small(context.appMuted),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _formatAverage(previousAverage),
-                        style: AppText.section(context.appInk),
-                      ),
-                      const SizedBox(height: 5),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            delta >= 0
-                                ? Icons.arrow_upward_rounded
-                                : Icons.arrow_downward_rounded,
-                            size: 14,
-                            color: delta >= 0
-                                ? AppColors.success
-                                : AppColors.danger,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            '${delta >= 0 ? '+' : '−'}'
-                            '${delta.abs().toStringAsFixed(2).replaceAll('.', ',')}',
-                            style: AppText.small(
-                              delta >= 0
-                                  ? AppColors.success
-                                  : AppColors.danger,
-                              weight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  Text('Оценки', style: AppText.pageTitle(context.appInk)),
+                  const SizedBox(height: 6),
+                  _QuarterSelector(
+                    quarter: _quarter,
+                    onChanged: (quarter) => setState(() => _quarter = quarter),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              _GradeDistribution(entries: entries),
-            ],
-          ),
+            ),
+            const SizedBox(width: AppSpacing.gap),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _formatAverage(average),
+                  style: AppText.display(context.appInk, size: 32),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${delta >= 0 ? '+' : '−'}'
+                  '${delta.abs().toStringAsFixed(2).replaceAll('.', ',')} '
+                  'к ${otherQuarter == 1 ? 'I' : 'II'} четв.',
+                  style: AppText.small(
+                    delta < 0 ? context.appError : context.appMuted,
+                    weight: FontWeight.w600,
+                  ).copyWith(fontFeatures: AppText.tabular),
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: 24),
-        SectionHeading(
-          title: 'Оценки по предметам',
-          trailing: Text(
-            '${subjects.length} ${_countWord(subjects.length, 'предмет', 'предмета', 'предметов')}',
-            style: AppText.small(context.appMuted),
-          ),
+        const SizedBox(height: AppSpacing.gap),
+        _GradeDistributionBand(entries: entries),
+        const SizedBox(height: AppSpacing.section),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Expanded(
+              child: Text(
+                'Оценки по предметам',
+                style: AppText.section(context.appInk),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text('Средний', style: AppText.small(context.appMuted)),
+          ],
         ),
         const SizedBox(height: 10),
         if (subjects.isEmpty)
@@ -180,32 +139,28 @@ class _GradesScreenState extends State<GradesScreen> {
             message: 'В этой четверти оценки ещё не выставлены.',
           )
         else
-          AppCard(
-            padding: EdgeInsets.zero,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: context.appBorder)),
+            ),
             child: Column(
               children: [
                 for (var index = 0; index < subjects.length; index++) ...[
-                  if (index > 0)
-                    Divider(
-                      height: 1,
-                      indent: 16,
-                      endIndent: 16,
-                      color: context.appBorder,
-                    ),
                   _SubjectGradeRow(
                     subject: subjects[index],
                     entries: entries
-                        .where((grade) =>
-                            grade.subjectId == subjects[index].id)
+                        .where((grade) => grade.subjectId == subjects[index].id)
                         .toList(growable: false),
                     average: _averageFor(
                       entries
-                          .where((grade) =>
-                              grade.subjectId == subjects[index].id)
+                          .where(
+                            (grade) => grade.subjectId == subjects[index].id,
+                          )
                           .toList(growable: false),
                     ),
                     onTap: () => _openSubjectSheet(subjects[index]),
                   ),
+                  Divider(height: 1, color: context.appBorder),
                 ],
               ],
             ),
@@ -222,61 +177,80 @@ class _GradesScreenState extends State<GradesScreen> {
 }
 
 class _QuarterSelector extends StatelessWidget {
-  const _QuarterSelector({
-    required this.quarter,
-    required this.onChanged,
-  });
+  const _QuarterSelector({required this.quarter, required this.onChanged});
 
   final int quarter;
   final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.appSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.appBorder),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Row(
-        children: [
-          for (final value in [1, 2])
-            Expanded(
-              child: Semantics(
-                selected: quarter == value,
-                button: true,
-                label: _quarterLabel(value),
-                child: InkWell(
-                  onTap: () => onChanged(value),
-                  child: AnimatedContainer(
-                    duration:
-                        appMotion(context, const Duration(milliseconds: 160)),
-                    curve: Curves.easeOutCubic,
-                    color: quarter == value ? context.appHero : Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    alignment: Alignment.center,
-                    child: Text(
-                      _quarterLabel(value),
-                      style: AppText.body(
-                        quarter == value ? Colors.white : context.appMuted,
-                        weight: FontWeight.w600,
+    return Wrap(
+      spacing: 16,
+      runSpacing: 4,
+      children: [
+        for (final value in [1, 2])
+          Semantics(
+            selected: quarter == value,
+            button: true,
+            label: _quarterLabel(value),
+            child: InkWell(
+              onTap: () => onChanged(value),
+              borderRadius: BorderRadius.circular(AppRadii.chip),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: AppSpacing.touch),
+                child: AnimatedContainer(
+                  duration: appMotion(
+                    context,
+                    const Duration(milliseconds: 160),
+                  ),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: quarter == value
+                            ? context.appInk
+                            : Colors.transparent,
+                        width: 2,
                       ),
                     ),
+                  ),
+                  child: Text(
+                    _quarterLabel(value),
+                    style: AppText.body(
+                      quarter == value ? context.appInk : context.appMuted,
+                      weight: quarter == value
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                    ).copyWith(fontSize: 14, height: 1.2),
                   ),
                 ),
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
 
-class _GradeDistribution extends StatelessWidget {
-  const _GradeDistribution({required this.entries});
+class _GradeDistributionBand extends StatelessWidget {
+  const _GradeDistributionBand({required this.entries});
 
   final List<GradeEntry> entries;
+
+  Color _stepColor(BuildContext context, int value) {
+    switch (value) {
+      case 5:
+        return context.appInk;
+      case 4:
+        return Color.lerp(context.appInk, context.appOnInk, 0.38)!;
+      case 3:
+        return Color.lerp(context.appInk, context.appOnInk, 0.72)!;
+      default:
+        return context.appError;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -287,62 +261,111 @@ class _GradeDistribution extends StatelessWidget {
     }
     final total = entries.length;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: SizedBox(
-            height: 8,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (final value in [5, 4, 3, 2])
-                  if ((counts[value] ?? 0) > 0)
-                    Expanded(
-                      flex: counts[value]!,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 2),
-                        child: Container(color: AppColors.forGrade(value)),
-                      ),
-                    ),
-              ],
-            ),
-          ),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(0, 10, 0, 12),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: context.appInk),
+          bottom: BorderSide(color: context.appBorder),
         ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 14,
-          runSpacing: 5,
-          children: [
-            for (final value in [5, 4, 3, 2])
-              if ((counts[value] ?? 0) > 0)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 10,
+              runSpacing: 6,
+              children: [
+                Wrap(
+                  spacing: 5,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: AppColors.forGrade(value),
-                        shape: BoxShape.circle,
+                    Text(
+                      'Итоги четверти',
+                      style: AppText.small(
+                        context.appInk,
+                        weight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(width: 5),
                     Text(
-                      '$value · ${counts[value]}',
-                      style: AppText.small(context.appMuted),
+                      '· $total ${_countWord(total, 'оценка', 'оценки', 'оценок')}',
+                      style: AppText.small(
+                        context.appInk,
+                        weight: FontWeight.w700,
+                      ).copyWith(fontFeatures: AppText.tabular),
                     ),
                   ],
                 ),
-          ],
-        ),
-        if (total == 0)
-          Text(
-            'Нет выставленных оценок',
-            style: AppText.small(context.appMuted),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: [
+                    for (final value in [5, 4, 3, 2])
+                      if ((counts[value] ?? 0) > 0)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: _stepColor(context, value),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              '$value·${counts[value]}',
+                              style: AppText.small(context.appMuted)
+                                  .copyWith(fontFeatures: AppText.tabular),
+                            ),
+                          ],
+                        ),
+                  ],
+                ),
+              ],
+            ),
           ),
-      ],
+          const SizedBox(height: 8),
+          if (total == 0)
+            Text(
+              'Нет выставленных оценок',
+              style: AppText.small(context.appMuted),
+            )
+          else
+            ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: SizedBox(
+                height: 5,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < 4; i++)
+                      if ((counts[5 - i] ?? 0) > 0) ...[
+                        if (i > 0 &&
+                            [
+                              5,
+                              4,
+                              3,
+                              2,
+                            ].take(i).any((v) => (counts[v] ?? 0) > 0))
+                          const SizedBox(width: 2),
+                        Expanded(
+                          flex: counts[5 - i]!,
+                          child: ColoredBox(color: _stepColor(context, 5 - i)),
+                        ),
+                      ],
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -362,83 +385,70 @@ class _SubjectGradeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = context.isDark
-        ? Color.lerp(subject.color, Colors.white, 0.35)!
-        : subject.color;
     final latest = entries.reversed.take(3).toList().reversed.toList();
 
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-        child: Row(
-          children: [
-            Container(
-              width: 3,
-              height: 38,
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    subject.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppText.body(
-                      context.appInk,
-                      weight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subject.teacher,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppText.small(context.appMuted),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+    return Semantics(
+      button: true,
+      label: '${subject.name}, средний балл ${_formatAverage(average)}',
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
               children: [
-                Text(
-                  _formatAverage(average),
-                  style: AppText.body(
-                    context.appInk,
-                    weight: FontWeight.w700,
-                  ).copyWith(fontFeatures: AppText.tabular),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        subject.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.body(
+                          context.appInk,
+                          weight: FontWeight.w600,
+                        ).copyWith(height: 1.25),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subject.teacher,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.small(context.appMuted),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(width: 10),
                 if (latest.isNotEmpty)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       for (var index = 0; index < latest.length; index++) ...[
                         if (index > 0) const SizedBox(width: 4),
-                        GradeMark(
-                          value: latest[index].value,
-                          size: 22,
-                        ),
+                        GradeMark(value: latest[index].value, size: 24),
                       ],
                     ],
                   ),
+                const SizedBox(width: 10),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 44),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      _formatAverage(average),
+                      style: AppText.body(
+                        context.appInk,
+                        weight: FontWeight.w700,
+                      ).copyWith(fontFeatures: AppText.tabular),
+                    ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 17,
-              color: context.appMuted,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -465,31 +475,19 @@ class _SubjectGradesSheet extends StatelessWidget {
         SheetHeader(
           title: subject.name,
           subtitle: '${_quarterLabel(quarter)} · ${subject.teacher}',
-          leading: SubjectMark(
-            color: subject.color,
-            icon: subject.icon,
-          ),
+          leading: SubjectMark(color: context.appInk, icon: subject.icon),
         ),
         const SizedBox(height: 18),
         Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
-            Container(
-              color: context.appAccent,
-              padding: const EdgeInsets.fromLTRB(9, 2, 10, 3),
-              child: Text(
-                _formatAverage(average),
-                style: AppText.display(AppColors.accentInk, size: 36),
-              ),
+            Text(
+              _formatAverage(average),
+              style: AppText.display(context.appInk, size: 32),
             ),
             const SizedBox(width: 10),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 3),
-              child: Text(
-                'средний балл',
-                style: AppText.small(context.appMuted),
-              ),
-            ),
+            Text('средний балл', style: AppText.small(context.appMuted)),
           ],
         ),
         const SizedBox(height: 18),
@@ -511,8 +509,7 @@ class _GradeEntryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final weight =
-        entry.weight.toStringAsFixed(1).replaceAll('.', ',');
+    final weight = entry.weight.toStringAsFixed(1).replaceAll('.', ',');
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 13),
       child: Row(
@@ -526,10 +523,7 @@ class _GradeEntryRow extends StatelessWidget {
               children: [
                 Text(
                   entry.workType,
-                  style: AppText.body(
-                    context.appInk,
-                    weight: FontWeight.w600,
-                  ),
+                  style: AppText.body(context.appInk, weight: FontWeight.w600),
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -538,10 +532,7 @@ class _GradeEntryRow extends StatelessWidget {
                 ),
                 if (entry.comment != null) ...[
                   const SizedBox(height: 7),
-                  Text(
-                    entry.comment!,
-                    style: AppText.small(context.appMuted),
-                  ),
+                  Text(entry.comment!, style: AppText.small(context.appMuted)),
                 ],
               ],
             ),
